@@ -10,6 +10,36 @@ function wfc27_register_admin_page() {
 
 add_action( 'admin_post_wfc27_run_inbox', 'wfc27_admin_run_inbox' );
 add_action( 'admin_post_wfc27_save_receiver', 'wfc27_admin_save_receiver' );
+add_action( 'wp_ajax_wfc27_status', 'wfc27_admin_ajax_status' );
+add_action( 'admin_enqueue_scripts', 'wfc27_admin_enqueue_status' );
+function wfc27_admin_enqueue_status( $hook ) {
+	if ( 'toplevel_page_wfc27' !== $hook ) {
+		return;
+	}
+	wp_enqueue_style( 'wfc27-admin-status', plugins_url( 'assets/admin-status.css', WFC27_FILE ), array(), WFC27_VERSION );
+	wp_enqueue_script( 'wfc27-admin-status', plugins_url( 'assets/admin-status.js', WFC27_FILE ), array(), WFC27_VERSION, true );
+	wp_localize_script( 'wfc27-admin-status', 'wfc27Status', array(
+		'url' => admin_url( 'admin-ajax.php' ),
+		'nonce' => wp_create_nonce( 'wfc27_status' ),
+	) );
+}
+function wfc27_admin_ajax_status() {
+	check_ajax_referer( 'wfc27_status', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Insufficient permissions.' ), 403 );
+	}
+	global $wpdb;
+	$last = get_option( 'wfc27_last_heartbeat', '' );
+	$counts = $wpdb->get_results( 'SELECT status, COUNT(*) AS total FROM ' . wfc27_packets_table() . ' GROUP BY status', ARRAY_A );
+	$parts = array();
+	foreach ( $counts as $count ) {
+		$parts[] = ucfirst( $count['status'] ) . ': ' . $count['total'];
+	}
+	wp_send_json_success( array(
+		'last' => $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : null,
+		'counts' => implode( ' · ', $parts ),
+	) );
+}
 function wfc27_admin_save_receiver() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( 'Insufficient permissions.' );
@@ -53,15 +83,17 @@ function wfc27_render_admin_page() {
 	<div class="wrap">
 		<h1>Web Force Connect 27</h1>
 		<p>Salesforce packets are received here, then applied to this site's posts and postmeta.</p>
+		<div class="wfc27-heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-last="<?php echo esc_attr( $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : '' ); ?>"><div class="wfc27-heartbeat-fill"></div></div>
+		<p id="wfc27-heartbeat-label" aria-live="polite">Waiting for train status</p>
 		<table class="widefat striped"><tbody>
 		<tr><th>Receive endpoint</th><td><code><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></td></tr>
-		<tr><th>Last train received</th><td><?php echo esc_html( $last ?: 'Never' ); ?> UTC</td></tr>
-		<tr><th>Next train expected</th><td><?php echo esc_html( $last ? gmdate( 'Y-m-d H:i:s', strtotime( $last . ' UTC' ) + 60 ) . ' UTC' : 'After Salesforce is connected' ); ?></td></tr>
+		<tr><th>Last train received</th><td id="wfc27-last-train"><?php echo esc_html( $last ? $last . ' UTC' : 'Never' ); ?></td></tr>
+		<tr><th>Next train expected</th><td id="wfc27-next-train"><?php echo esc_html( $last ? gmdate( 'Y-m-d H:i:s', strtotime( $last . ' UTC' ) + 60 ) . ' UTC' : 'After Salesforce is connected' ); ?></td></tr>
 		<tr><th>Mapped posts</th><td><?php echo esc_html( (string) $mapped ); ?></td></tr>
 		<tr><th>Average processing wait, last 24 hours</th><td><?php echo esc_html( null === $average ? 'No completed packets' : round( (float) $average ) . ' seconds' ); ?></td></tr>
 		</tbody></table>
 		<h2>Queue</h2>
-		<p><?php foreach ( $counts as $count ) { echo esc_html( ucfirst( $count['status'] ) . ': ' . $count['total'] ) . ' &nbsp; '; } ?></p>
+		<p id="wfc27-queue-counts"><?php foreach ( $counts as $count ) { echo esc_html( ucfirst( $count['status'] ) . ': ' . $count['total'] ) . ' &nbsp; '; } ?></p>
 		<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 			<input type="hidden" name="page" value="wfc27">
 			<label for="wfc27-sf-id">Trace Salesforce record ID</label>

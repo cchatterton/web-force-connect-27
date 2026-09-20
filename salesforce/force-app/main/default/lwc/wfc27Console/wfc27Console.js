@@ -29,6 +29,9 @@ export default class Wfc27Console extends LightningElement {
   targetType = 'post';
   wpKey = '';
   searchId = '';
+  heartbeatTimer;
+  progressTimer;
+  heartbeatPercent = 0;
   @track journeyData;
   packetColumns = [
     { label: 'Packet', fieldName: 'Id' },
@@ -53,12 +56,30 @@ export default class Wfc27Console extends LightningElement {
   targetOptions = [{ label: 'Post field', value: 'post' }, { label: 'Post meta', value: 'meta' }];
   statusOptions = [{ label: 'Draft', value: 'draft' }, { label: 'Publish', value: 'publish' }, { label: 'Pending review', value: 'pending' }, { label: 'Private', value: 'private' }];
 
-  connectedCallback() { this.refresh(); }
+  connectedCallback() {
+    this.refresh();
+    this.heartbeatTimer = window.setInterval(() => this.refreshTransport(), 10000);
+    this.progressTimer = window.setInterval(() => this.updateHeartbeatProgress(), 250);
+  }
+  disconnectedCallback() { window.clearInterval(this.heartbeatTimer); window.clearInterval(this.progressTimer); }
   async refresh() {
-    try { [this.rows, this.status] = await Promise.all([objects(), status()]); this.error = null; }
+    try { [this.rows, this.status] = await Promise.all([objects(), status()]); this.updateHeartbeatProgress(); this.error = null; }
     catch (error) { this.error = error.body?.message || error.message; }
   }
-  get objectOptions() { return this.rows.filter(row => !row.bindingId || row.api === this.selectedObject).map(row => ({ label: `${row.label} (${row.api})${row.hasFlag ? '' : ' — no eligibility field'}`, value: row.api })); }
+  async refreshTransport() {
+    try { this.status = await status(); this.updateHeartbeatProgress(); this.error = null; }
+    catch (error) { this.error = error.body?.message || error.message; }
+  }
+  updateHeartbeatProgress() {
+    const last = this.status?.lastTrain ? new Date(this.status.lastTrain).getTime() : NaN;
+    this.heartbeatPercent = Number.isFinite(last) ? Math.min(100, Math.max(0, Math.floor((Date.now() - last) / 600))) : 0;
+  }
+  get heartbeatStyle() { return `width: ${this.heartbeatPercent}%`; }
+  get heartbeatLabel() {
+    if (!this.status?.lastTrain) return 'Waiting for first train';
+    return this.heartbeatPercent >= 100 ? 'Next train is due' : `Next train in about ${Math.ceil((100 - this.heartbeatPercent) * 0.6)} seconds`;
+  }
+  get objectOptions() { return this.rows.filter(row => !row.bindingId || row.api === this.selectedObject).map(row => ({ label: `${row.label} (${row.api})`, value: row.api })); }
   get configuredBindings() { return this.rows.filter(row => row.bindingId).map(row => ({ ...row,
     displayName: `${row.label} (${row.api})`,
     eligibilityLabel: row.hasFlag ? 'Present' : 'Missing',
@@ -66,6 +87,7 @@ export default class Wfc27Console extends LightningElement {
   })).sort((a, b) => a.displayName.localeCompare(b.displayName)); }
   get objectFormTitle() { return this.bindingId ? 'Edit object binding' : 'Add object binding'; }
   get selectedRow() { return this.rows.find(row => row.api === this.selectedObject); }
+  get nearEligibilityField() { return this.selectedRow?.hasFlag ? null : this.fieldRows.find(field => field.api.startsWith('WFC27_Eligible') && field.api !== 'WFC27_Eligible__c' && field.type?.toLowerCase() === 'boolean')?.api; }
   get fieldOptions() { return this.fieldRows.map(row => ({ label: `${row.label} (${row.api})`, value: row.api })); }
   get saveDisabled() { return !this.selectedRow || !this.postType; }
   get baseDisabled() { return !this.bindingId || !this.active || !this.selectedRow?.hasFlag; }
@@ -80,7 +102,13 @@ export default class Wfc27Console extends LightningElement {
     this.draftDays = row.draftDays;
     this.binDays = row.binDays;
     this.sourceField = null;
-    try { this.fieldRows = await fields({ objectApi: this.selectedObject }); this.fieldRules = this.bindingId ? await fieldRules({ bindingId: this.bindingId }) : []; this.error = null; }
+    this.fieldRows = [];
+    try {
+      this.fieldRows = await fields({ objectApi: this.selectedObject });
+      row.hasFlag = this.fieldRows.some(field => field.api === 'WFC27_Eligible__c' && field.type?.toLowerCase() === 'boolean');
+      this.fieldRules = this.bindingId ? await fieldRules({ bindingId: this.bindingId }) : [];
+      this.error = null;
+    }
     catch (error) { this.error = error.body?.message || error.message; }
   }
   async editObjectRule(event) {

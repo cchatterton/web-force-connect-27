@@ -10,20 +10,31 @@ public with sharing class WFC27_Admin {
         for (WFC27_Object_Binding__c rule : [SELECT Id, Object_API_Name__c, WP_Post_Type__c, Active__c,
                 Eligible_Status__c, Draft_Retention_Days__c, Bin_Retention_Days__c FROM WFC27_Object_Binding__c]) rules.put(rule.Object_API_Name__c, rule);
         List<Map<String,Object>> result = new List<Map<String,Object>>();
-        for (String api : Schema.getGlobalDescribe().keySet()) {
+        Integer offsetRows = 0;
+        List<EntityDefinition> entities;
+        do {
+          entities = [SELECT QualifiedApiName, Label FROM EntityDefinition
+                WHERE IsQueryable = true AND IsCustomizable = true AND IsDeprecatedAndHidden = false
+                ORDER BY QualifiedApiName LIMIT 200 OFFSET :offsetRows];
+          for (EntityDefinition entity : entities) {
+            String api = entity.QualifiedApiName;
             if (api.startsWith('WFC27_')) continue;
-            Schema.DescribeSObjectResult description = Schema.getGlobalDescribe().get(api).getDescribe();
-            if (!description.isQueryable() || !description.isUpdateable()) continue;
-            Schema.SObjectField flag = description.fields.getMap().get('WFC27_Eligible__c');
-            Boolean hasFlag = flag != null && flag.getDescribe().getType() == Schema.DisplayType.Boolean;
             WFC27_Object_Binding__c rule = rules.get(api);
-            result.add(new Map<String,Object>{'api' => api, 'label' => description.getLabel(), 'hasFlag' => hasFlag,
+            Boolean hasFlag = false;
+            if (rule != null) {
+                Schema.SObjectType token = Schema.getGlobalDescribe().get(api);
+                Schema.SObjectField flag = token == null ? null : token.getDescribe().fields.getMap().get('WFC27_Eligible__c');
+                hasFlag = flag != null && flag.getDescribe().getType() == Schema.DisplayType.Boolean;
+            }
+            result.add(new Map<String,Object>{'api' => api, 'label' => entity.Label, 'hasFlag' => hasFlag,
                 'bindingId' => rule == null ? null : rule.Id, 'postType' => rule == null ? null : rule.WP_Post_Type__c,
                 'active' => rule != null && rule.Active__c,
                 'eligibleStatus' => rule == null ? 'draft' : rule.Eligible_Status__c,
                 'draftDays' => rule == null ? null : rule.Draft_Retention_Days__c,
                 'binDays' => rule == null ? null : rule.Bin_Retention_Days__c});
-        }
+          }
+          offsetRows += entities.size();
+        } while (entities.size() == 200 && offsetRows < 2000);
         return result;
     }
 

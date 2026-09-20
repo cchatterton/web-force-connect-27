@@ -5,6 +5,10 @@
       <lightning-tabset>
         <lightning-tab label="Transport">
           <template if:true={status}>
+            <div class="heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow={heartbeatPercent}>
+              <div class="heartbeat-fill" style={heartbeatStyle}></div>
+            </div>
+            <p class="slds-m-bottom_small" aria-live="polite">{heartbeatLabel}</p>
             <p>Last train: <lightning-formatted-date-time value={status.lastTrain} year="numeric" month="short" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time></p>
             <p>Next expected: <lightning-formatted-date-time value={status.nextExpected} hour="2-digit" minute="2-digit"></lightning-formatted-date-time></p>
             <p>Waiting: {status.waiting} · Packet errors: {status.errors}</p>
@@ -23,12 +27,13 @@
           </template>
         </lightning-tab>
         <lightning-tab label="Object bindings">
-          <p class="slds-m-bottom_small">Add objects now; each starts syncing only when it is active and has a WFC27_Eligible__c checkbox or checkbox formula. The field decides which records qualify.</p>
+          <p class="slds-m-bottom_small">Add objects now; each starts syncing only when it is active and has a WFC27_Eligible__c checkbox or checkbox formula. In Object Manager, enter Field Name WFC27_Eligible; Salesforce adds __c. The field decides which records qualify.</p>
           <lightning-datatable key-field="bindingId" data={configuredBindings} columns={objectColumns} onrowaction={editObjectRule} hide-checkbox-column></lightning-datatable>
           <h3 class="slds-text-heading_small slds-m-top_medium slds-m-bottom_small">{objectFormTitle}</h3>
           <lightning-combobox label="Salesforce object" options={objectOptions} value={selectedObject} onchange={chooseObject}></lightning-combobox>
           <template if:true={selectedRow}>
-            <template if:false={selectedRow.hasFlag}><p class="slds-text-color_error slds-m-top_small">This object has no WFC27_Eligible__c checkbox yet. You can save the binding, but it will not sync until the field exists.</p></template>
+            <template if:false={selectedRow.hasFlag}><p class="slds-text-color_error slds-m-top_small">This object has no WFC27_Eligible__c checkbox yet. Use Field Name WFC27_Eligible in Object Manager; do not enter the __c suffix. You can save the binding, but it will not sync until the field exists.</p></template>
+            <template if:true={nearEligibilityField}><p class="slds-text-color_error">Found {nearEligibilityField} on this object. Its API name differs from WFC27_Eligible__c.</p></template>
             <lightning-input label="WordPress post type" value={postType} onchange={changePostType}></lightning-input>
             <lightning-combobox label="Status when eligible" options={statusOptions} value={eligibleStatus} onchange={changeEligibleStatus}></lightning-combobox>
             <lightning-input type="checkbox" label="Active — include this object in sync when its eligibility field is present" checked={active} onchange={changeActive}></lightning-input>
