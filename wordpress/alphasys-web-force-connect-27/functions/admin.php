@@ -1,0 +1,77 @@
+<?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+add_action( 'admin_menu', 'wfc27_register_admin_page' );
+function wfc27_register_admin_page() {
+	add_menu_page( 'Web Force Connect 27', 'WFC27', 'manage_options', 'wfc27', 'wfc27_render_admin_page', 'dashicons-update', 65 );
+}
+
+add_action( 'admin_post_wfc27_run_inbox', 'wfc27_admin_run_inbox' );
+function wfc27_admin_run_inbox() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'Insufficient permissions.' );
+	}
+	check_admin_referer( 'wfc27_run_inbox' );
+	wfc27_process_pending_packets( 20 );
+	wp_safe_redirect( admin_url( 'admin.php?page=wfc27' ) );
+	exit;
+}
+
+function wfc27_render_admin_page() {
+	global $wpdb;
+	$packets = wfc27_packets_table();
+	$identity = wfc27_identity_table();
+	$counts = $wpdb->get_results( "SELECT status, COUNT(*) AS total FROM {$packets} GROUP BY status", ARRAY_A );
+	$rows = $wpdb->get_results( "SELECT id,packet_id,status,received_at,processed_at,error_text FROM {$packets} ORDER BY id DESC LIMIT 50", ARRAY_A );
+	$mapped = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$identity} WHERE wp_post_id > 0" );
+	$last = get_option( 'wfc27_last_heartbeat', '' );
+	$average = $wpdb->get_var( "SELECT AVG(TIMESTAMPDIFF(SECOND,received_at,processed_at)) FROM {$packets} WHERE status IN ('completed','reported') AND processed_at IS NOT NULL AND received_at > UTC_TIMESTAMP() - INTERVAL 1 DAY" );
+	$source_id = isset( $_GET['sf_id'] ) ? sanitize_text_field( wp_unslash( $_GET['sf_id'] ) ) : '';
+	$journey = array();
+	$source_identity = null;
+	if ( preg_match( '/^[A-Za-z0-9]{15,18}$/', $source_id ) ) {
+		$source_identity = wfc27_identity_for_sf( $source_id );
+		$journey = $wpdb->get_results( $wpdb->prepare( "SELECT packet_id,status,received_at,processed_at,error_text FROM {$packets} WHERE payload LIKE %s OR result_json LIKE %s ORDER BY id DESC LIMIT 25", '%' . $wpdb->esc_like( $source_id ) . '%', '%' . $wpdb->esc_like( $source_id ) . '%' ), ARRAY_A );
+	}
+	?>
+	<div class="wrap">
+		<h1>Web Force Connect 27</h1>
+		<p>Salesforce packets are received here, then applied to this site's posts and postmeta.</p>
+		<table class="widefat striped"><tbody>
+		<tr><th>Receive endpoint</th><td><code><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></td></tr>
+		<tr><th>Last train received</th><td><?php echo esc_html( $last ?: 'Never' ); ?> UTC</td></tr>
+		<tr><th>Next train expected</th><td><?php echo esc_html( $last ? gmdate( 'Y-m-d H:i:s', strtotime( $last . ' UTC' ) + 60 ) . ' UTC' : 'After Salesforce is connected' ); ?></td></tr>
+		<tr><th>Mapped posts</th><td><?php echo esc_html( (string) $mapped ); ?></td></tr>
+		<tr><th>Average processing wait, last 24 hours</th><td><?php echo esc_html( null === $average ? 'No completed packets' : round( (float) $average ) . ' seconds' ); ?></td></tr>
+		</tbody></table>
+		<h2>Queue</h2>
+		<p><?php foreach ( $counts as $count ) { echo esc_html( ucfirst( $count['status'] ) . ': ' . $count['total'] ) . ' &nbsp; '; } ?></p>
+		<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+			<input type="hidden" name="page" value="wfc27">
+			<label for="wfc27-sf-id">Trace Salesforce record ID</label>
+			<input id="wfc27-sf-id" name="sf_id" value="<?php echo esc_attr( $source_id ); ?>" pattern="[A-Za-z0-9]{15,18}">
+			<?php submit_button( 'Show journey', 'secondary', 'submit', false ); ?>
+		</form>
+		<?php if ( $source_id ) : ?>
+			<p><?php echo esc_html( $source_identity ? 'Mapped WordPress post ID: ' . $source_identity['wp_post_id'] : 'No current identity mapping.' ); ?></p>
+			<table class="widefat striped"><thead><tr><th>Packet</th><th>Status</th><th>Received (UTC)</th><th>Processed (UTC)</th><th>Error</th></tr></thead><tbody>
+			<?php foreach ( $journey as $row ) : ?><tr><td><?php echo esc_html( $row['packet_id'] ); ?></td><td><?php echo esc_html( $row['status'] ); ?></td><td><?php echo esc_html( $row['received_at'] ); ?></td><td><?php echo esc_html( $row['processed_at'] ?: '—' ); ?></td><td><?php echo esc_html( $row['error_text'] ?: '—' ); ?></td></tr><?php endforeach; ?>
+			</tbody></table>
+		<?php endif; ?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="wfc27_run_inbox">
+			<?php wp_nonce_field( 'wfc27_run_inbox' ); ?>
+			<?php submit_button( 'Process pending packets now', 'secondary', 'submit', false ); ?>
+		</form>
+		<table class="widefat striped"><thead><tr><th>Packet</th><th>Status</th><th>Received (UTC)</th><th>Processed (UTC)</th><th>Error</th></tr></thead><tbody>
+		<?php foreach ( $rows as $row ) : ?>
+		<tr><td><code><?php echo esc_html( $row['packet_id'] ); ?></code></td><td><?php echo esc_html( $row['status'] ); ?></td><td><?php echo esc_html( $row['received_at'] ); ?></td><td><?php echo esc_html( $row['processed_at'] ?: '—' ); ?></td><td><?php echo esc_html( $row['error_text'] ?: '—' ); ?></td></tr>
+		<?php endforeach; ?>
+		</tbody></table>
+		<h2>Connection setup</h2>
+		<p>Create a dedicated WordPress user with the WFC27 Integration role. Create an Application Password for that user, then configure the Salesforce outbound credential to call the endpoint above over HTTPS. The password belongs in Salesforce credential storage, not in either codebase.</p>
+	</div>
+	<?php
+}

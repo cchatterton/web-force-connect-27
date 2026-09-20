@@ -1,0 +1,5 @@
+.DS_Store
+.sf/
+.sfdx/
+node_modules/
+salesforce/local-setup/

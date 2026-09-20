@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Object_Binding__c</fullName><label>Object Binding</label><referenceTo>WFC27_Object_Binding__c</referenceTo><relationshipLabel>Object Binding</relationshipLabel><relationshipName>Object_Binding</relationshipName><type>Lookup</type></CustomField>

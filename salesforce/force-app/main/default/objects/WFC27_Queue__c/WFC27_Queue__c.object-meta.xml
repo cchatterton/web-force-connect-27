@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata"><deploymentStatus>Deployed</deploymentStatus><label>WFC27 Queue Item</label><nameField><displayFormat>QUEUE-{000000}</displayFormat><label>Queue Item Number</label><type>AutoNumber</type></nameField><pluralLabel>WFC27 Queue Items</pluralLabel><sharingModel>ReadWrite</sharingModel></CustomObject>

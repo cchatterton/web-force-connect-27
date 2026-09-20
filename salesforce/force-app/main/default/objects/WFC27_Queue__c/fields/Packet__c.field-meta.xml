@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Packet__c</fullName><label>Packet</label><referenceTo>WFC27_Packet__c</referenceTo><relationshipLabel>Packet</relationshipLabel><relationshipName>Packet</relationshipName><type>Lookup</type></CustomField>

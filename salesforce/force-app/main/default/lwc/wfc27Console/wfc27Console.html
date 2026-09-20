@@ -1,0 +1,52 @@
+<template>
+  <lightning-card title="Web Force Connect 27" icon-name="standard:connected_apps">
+    <div class="slds-p-around_medium">
+      <template if:true={error}><div class="slds-text-color_error slds-m-bottom_small" role="alert">{error}</div></template>
+      <lightning-tabset>
+        <lightning-tab label="Transport">
+          <template if:true={status}>
+            <p>Last train: <lightning-formatted-date-time value={status.lastTrain} year="numeric" month="short" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time></p>
+            <p>Next expected: <lightning-formatted-date-time value={status.nextExpected} hour="2-digit" minute="2-digit"></lightning-formatted-date-time></p>
+            <p>Waiting: {status.waiting} · Packet errors: {status.errors}</p>
+            <p>Average content wait: {status.averageWaitSeconds} seconds (latest 100 completed)</p>
+            <lightning-input type="number" label="Items per train" min="1" max="100" value={status.batchSize} onchange={changeBatch}></lightning-input>
+            <lightning-button label="Save batch size" onclick={saveBatch} class="slds-m-top_small"></lightning-button>
+            <lightning-button label="Start one-minute train and daily retention" onclick={startJobs} class="slds-m-left_small"></lightning-button>
+            <lightning-input label="Trace a Salesforce record ID" value={searchId} onchange={changeSearch}></lightning-input>
+            <lightning-button label="Show journey" onclick={showJourney}></lightning-button>
+            <template if:true={journeyData}>
+              <template if:true={journeyData.identity}><p>WordPress ID: {journeyData.identity.WP_Post_ID__c} · Status: {journeyData.identity.WP_Status__c}</p></template>
+              <lightning-datatable key-field="Id" data={journeyData.queue} columns={journeyColumns} hide-checkbox-column></lightning-datatable>
+            </template>
+            <lightning-datatable key-field="Id" data={status.packets} columns={packetColumns} hide-checkbox-column class="slds-m-top_medium"></lightning-datatable>
+          </template>
+        </lightning-tab>
+        <lightning-tab label="Object bindings">
+          <p class="slds-m-bottom_small">Add WFC27_Eligible__c as a checkbox or checkbox formula in Object Manager before activating a binding. A missing flag is shown below.</p>
+          <lightning-combobox label="Salesforce object" options={objectOptions} value={selectedObject} onchange={chooseObject}></lightning-combobox>
+          <template if:true={selectedRow}>
+            <p class="slds-m-top_small">Eligibility field present: {selectedRow.hasFlag}</p>
+            <lightning-input label="WordPress post type" value={postType} onchange={changePostType}></lightning-input>
+            <lightning-combobox label="Status when eligible" options={statusOptions} value={eligibleStatus} onchange={changeEligibleStatus}></lightning-combobox>
+            <lightning-input type="checkbox" label="Active" checked={active} onchange={changeActive}></lightning-input>
+            <lightning-input type="number" label="Draft retention days" min="0" value={draftDays} onchange={changeDraft}></lightning-input>
+            <lightning-input type="number" label="Bin retention days" min="0" value={binDays} onchange={changeBin}></lightning-input>
+            <lightning-button label="Save object binding" variant="brand" onclick={saveObjectRule} disabled={saveDisabled}></lightning-button>
+            <lightning-button label="Queue base sync" onclick={queueBaseSync} disabled={baseDisabled} class="slds-m-left_small"></lightning-button>
+          </template>
+        </lightning-tab>
+        <lightning-tab label="Field bindings">
+          <template if:true={bindingId}>
+            <p class="slds-m-bottom_small">Map a Salesforce field to a WordPress post field or meta key. Fields bound here are locked in WordPress.</p>
+            <lightning-combobox label="Salesforce field" options={fieldOptions} value={sourceField} onchange={chooseField}></lightning-combobox>
+            <lightning-combobox label="Target" options={targetOptions} value={targetType} onchange={chooseTarget}></lightning-combobox>
+            <lightning-input label="WordPress key" value={wpKey} onchange={changeKey}></lightning-input>
+            <lightning-button label="Add field binding" onclick={saveFieldRule} disabled={fieldSaveDisabled}></lightning-button>
+            <lightning-datatable key-field="Id" data={fieldRules} columns={fieldColumns} hide-checkbox-column class="slds-m-top_medium"></lightning-datatable>
+          </template>
+          <template if:false={bindingId}><p>Select and save an object binding first.</p></template>
+        </lightning-tab>
+      </lightning-tabset>
+    </div>
+  </lightning-card>
+</template>
