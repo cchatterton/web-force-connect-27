@@ -23,13 +23,15 @@
           </template>
         </lightning-tab>
         <lightning-tab label="Object bindings">
-          <p class="slds-m-bottom_small">Add WFC27_Eligible__c as a checkbox or checkbox formula in Object Manager before activating a binding. A missing flag is shown below.</p>
+          <p class="slds-m-bottom_small">Add objects now; each starts syncing only when it is active and has a WFC27_Eligible__c checkbox or checkbox formula. The field decides which records qualify.</p>
+          <lightning-datatable key-field="bindingId" data={configuredBindings} columns={objectColumns} onrowaction={editObjectRule} hide-checkbox-column></lightning-datatable>
+          <h3 class="slds-text-heading_small slds-m-top_medium slds-m-bottom_small">{objectFormTitle}</h3>
           <lightning-combobox label="Salesforce object" options={objectOptions} value={selectedObject} onchange={chooseObject}></lightning-combobox>
           <template if:true={selectedRow}>
-            <p class="slds-m-top_small">Eligibility field present: {selectedRow.hasFlag}</p>
+            <template if:false={selectedRow.hasFlag}><p class="slds-text-color_error slds-m-top_small">This object has no WFC27_Eligible__c checkbox yet. You can save the binding, but it will not sync until the field exists.</p></template>
             <lightning-input label="WordPress post type" value={postType} onchange={changePostType}></lightning-input>
             <lightning-combobox label="Status when eligible" options={statusOptions} value={eligibleStatus} onchange={changeEligibleStatus}></lightning-combobox>
-            <lightning-input type="checkbox" label="Active" checked={active} onchange={changeActive}></lightning-input>
+            <lightning-input type="checkbox" label="Active — include this object in sync when its eligibility field is present" checked={active} onchange={changeActive}></lightning-input>
             <lightning-input type="number" label="Draft retention days" min="0" value={draftDays} onchange={changeDraft}></lightning-input>
             <lightning-input type="number" label="Bin retention days" min="0" value={binDays} onchange={changeBin}></lightning-input>
             <lightning-button label="Save object binding" variant="brand" onclick={saveObjectRule} disabled={saveDisabled}></lightning-button>

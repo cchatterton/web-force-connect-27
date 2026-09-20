@@ -37,6 +37,15 @@ export default class Wfc27Console extends LightningElement {
     { label: 'Meta', fieldName: 'Meta_Count__c', type: 'number' },
     { label: 'Error', fieldName: 'Error__c' }
   ];
+  objectColumns = [
+    { label: 'Salesforce object', fieldName: 'displayName' },
+    { label: 'WordPress post type', fieldName: 'postType' },
+    { label: 'Eligible status', fieldName: 'eligibleStatus' },
+    { label: 'Eligibility field', fieldName: 'eligibilityLabel' },
+    { label: 'Active', fieldName: 'active', type: 'boolean' },
+    { label: 'Sync', fieldName: 'syncLabel' },
+    { type: 'button', typeAttributes: { label: 'Edit', name: 'edit', variant: 'base' } }
+  ];
   journeyColumns = [{ label: 'Queue ID', fieldName: 'Id' }, { label: 'Kind', fieldName: 'Kind__c' },
     { label: 'Status', fieldName: 'Status__c' }, { label: 'Packet', fieldName: 'Packet__c' }];
   fieldColumns = [{ label: 'Salesforce field', fieldName: 'Source_Field__c' }, { label: 'Target', fieldName: 'Target_Type__c' },
@@ -49,11 +58,17 @@ export default class Wfc27Console extends LightningElement {
     try { [this.rows, this.status] = await Promise.all([objects(), status()]); this.error = null; }
     catch (error) { this.error = error.body?.message || error.message; }
   }
-  get objectOptions() { return this.rows.map(row => ({ label: `${row.label} (${row.api})${row.hasFlag ? '' : ' — no eligibility field'}`, value: row.api })); }
+  get objectOptions() { return this.rows.filter(row => !row.bindingId || row.api === this.selectedObject).map(row => ({ label: `${row.label} (${row.api})${row.hasFlag ? '' : ' — no eligibility field'}`, value: row.api })); }
+  get configuredBindings() { return this.rows.filter(row => row.bindingId).map(row => ({ ...row,
+    displayName: `${row.label} (${row.api})`,
+    eligibilityLabel: row.hasFlag ? 'Present' : 'Missing',
+    syncLabel: !row.active ? 'Paused' : row.hasFlag ? 'Ready' : 'Waiting for eligibility field'
+  })).sort((a, b) => a.displayName.localeCompare(b.displayName)); }
+  get objectFormTitle() { return this.bindingId ? 'Edit object binding' : 'Add object binding'; }
   get selectedRow() { return this.rows.find(row => row.api === this.selectedObject); }
   get fieldOptions() { return this.fieldRows.map(row => ({ label: `${row.label} (${row.api})`, value: row.api })); }
-  get saveDisabled() { return !this.selectedRow?.hasFlag || !this.postType; }
-  get baseDisabled() { return !this.bindingId || !this.active; }
+  get saveDisabled() { return !this.selectedRow || !this.postType; }
+  get baseDisabled() { return !this.bindingId || !this.active || !this.selectedRow?.hasFlag; }
   get fieldSaveDisabled() { return !this.bindingId || !this.sourceField || !this.wpKey; }
   async chooseObject(event) {
     this.selectedObject = event.detail.value;
@@ -67,6 +82,9 @@ export default class Wfc27Console extends LightningElement {
     this.sourceField = null;
     try { this.fieldRows = await fields({ objectApi: this.selectedObject }); this.fieldRules = this.bindingId ? await fieldRules({ bindingId: this.bindingId }) : []; this.error = null; }
     catch (error) { this.error = error.body?.message || error.message; }
+  }
+  async editObjectRule(event) {
+    if (event.detail.action.name === 'edit') await this.chooseObject({ detail: { value: event.detail.row.api } });
   }
   changePostType(event) { this.postType = event.detail.value; }
   changeEligibleStatus(event) { this.eligibleStatus = event.detail.value; }

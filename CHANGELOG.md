@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Schedule each one-minute Salesforce train as a one-time job and queue the next train when it runs. Salesforce does not accept a wildcard in the cron minute field.
+- Show saved object bindings in a table and allow an object binding to be saved before its eligibility field exists. Active controls whether a ready binding participates in sync; missing eligibility still prevents sync.
 
 ## 0.1.1 - development
 

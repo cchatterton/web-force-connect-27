@@ -44,8 +44,7 @@ public with sharing class WFC27_Admin {
     public static Id saveObject(String objectApi, String postType, String eligibleStatus, Boolean active, Integer draftDays, Integer binDays) {
         requireManage();
         Schema.SObjectType token = Schema.getGlobalDescribe().get(objectApi);
-        if (token == null || token.getDescribe().fields.getMap().get('WFC27_Eligible__c') == null ||
-            token.getDescribe().fields.getMap().get('WFC27_Eligible__c').getDescribe().getType() != Schema.DisplayType.Boolean) throw new AuraHandledException('Add the WFC27_Eligible__c checkbox or checkbox formula first.');
+        if (token == null || !token.getDescribe().isQueryable() || !token.getDescribe().isUpdateable()) throw new AuraHandledException('Select an available Salesforce object.');
         if (String.isBlank(postType) || !Pattern.matches('[a-z0-9_\\-]{1,20}', postType)) throw new AuraHandledException('Enter a valid WordPress post type slug.');
         if (!new Set<String>{'draft','publish','pending','private'}.contains(eligibleStatus)) throw new AuraHandledException('Select a supported eligible status.');
         if ((draftDays != null && (draftDays < 0 || draftDays > 99999)) || (binDays != null && (binDays < 0 || binDays > 99999))) throw new AuraHandledException('Retention days must be between 0 and 99999.');
@@ -136,8 +135,11 @@ public with sharing class WFC27_Admin {
     @AuraEnabled
     public static Id startBaseSync(Id bindingId) {
         requireManage();
-        WFC27_Object_Binding__c rule = [SELECT Id, Active__c FROM WFC27_Object_Binding__c WHERE Id = :bindingId LIMIT 1];
+        WFC27_Object_Binding__c rule = [SELECT Id, Active__c, Object_API_Name__c FROM WFC27_Object_Binding__c WHERE Id = :bindingId LIMIT 1];
         if (!rule.Active__c) throw new AuraHandledException('Activate the object binding first.');
+        Schema.SObjectType token = Schema.getGlobalDescribe().get(rule.Object_API_Name__c);
+        Schema.SObjectField flag = token == null ? null : token.getDescribe().fields.getMap().get('WFC27_Eligible__c');
+        if (flag == null || flag.getDescribe().getType() != Schema.DisplayType.Boolean) throw new AuraHandledException('Add the WFC27_Eligible__c checkbox or checkbox formula before starting a base sync.');
         return Database.executeBatch(new WFC27_BaseSync(bindingId), 100);
     }
 
