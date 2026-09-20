@@ -2,7 +2,7 @@
 
 AlphaSys WFC27 is a Salesforce-to-WordPress content transport. Salesforce selects eligible records and sends bound fields; WordPress stages packets, creates or updates posts, and returns identity and processing results on later one-minute trains. Fields that Salesforce sends are protected in WordPress. Excerpt, featured image, AlphaBlocks, rows, and other fields stay local unless explicitly bound.
 
-Version: 0.1.0 development build. The WordPress plugin was activated and smoke-tested on local WordPress 7.1.1 / PHP 8.3. The Salesforce source has not been validated in the developer org.
+Version: 0.1.0 development build. The WordPress plugin was activated and smoke-tested on local WordPress 7.1.1 / PHP 8.3. Salesforce metadata was deployed to the designated developer org on 2026-09-20 for further testing; this is not a released unmanaged package.
 
 ## Project declaration
 
@@ -75,7 +75,7 @@ Do not remove a customer's eligibility field when deactivating a binding. To per
 
 ## Validation and current limits
 
-PHP syntax, XML parsing, and Salesforce DX source conversion passed locally. A disposable WordPress 7.1.1 site verified activation, admin rendering, packet receipt, delayed completion, create/update of post and meta, bound-field protection, preservation of a local excerpt, local trash reporting, and the GitHub/Check for updates row links. Apex compilation, deployment, tests, Named Credential setup, and a complete cross-system record journey require the authenticated Salesforce developer org and remain unverified. Do not use this build in production before those checks pass.
+PHP syntax, XML parsing, and Salesforce DX source conversion passed locally. A disposable WordPress 7.1.1 site verified activation, admin rendering, packet receipt, delayed completion, create/update of post and meta, bound-field protection, preservation of a local excerpt, local trash reporting, and the GitHub/Check for updates row links. Salesforce deployment `0Afaj00000l6WDTCA2` installed 65 components in the designated developer org with no component errors using `NoTestRun`. A separate `RunLocalTests` validation compiled the metadata and ran 11 tests without test failures, but failed the required 75% overall Apex coverage threshold at 46%. Named Credential setup, a full cross-system record journey, and an unmanaged package release remain outstanding. Do not use this build in production before those checks pass.
 
 For another disposable local WordPress site, run `wp --path=/path/to/wordpress eval-file /path/to/web-force-connect-27/tests/wp-smoke.php` with the plugin active. The script refuses to run unless WordPress reports its environment type as `local`.
 

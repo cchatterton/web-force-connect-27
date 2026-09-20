@@ -73,7 +73,7 @@ public without sharing class WFC27_Engine {
 
     private static void dispatch(Integer batchSize) {
         List<WFC27_Queue__c> queue = [SELECT Id, Source_ID__c, Source_Object__c, Kind__c, Status__c
-            FROM WFC27_Queue__c WHERE Status__c = 'pending' ORDER BY CreatedDate, Id LIMIT :batchSize FOR UPDATE];
+            FROM WFC27_Queue__c WHERE Status__c = 'pending' LIMIT :batchSize FOR UPDATE];
         if (queue.isEmpty()) {
             System.enqueueJob(new WFC27_Sender(null));
             return;
