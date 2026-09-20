@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Schedule each one-minute Salesforce train as a one-time job and queue the next train when it runs. Salesforce does not accept a wildcard in the cron minute field.
+
 ## 0.1.1 - development
 
 - Let WordPress administrators receive trains by default, with an optional selected receiver user.
