@@ -51,4 +51,13 @@ private class WFC27_TransportTest {
         Test.stopTest();
         System.assertEquals('error', [SELECT Status__c FROM WFC27_Packet__c WHERE Id = :packet.Id].Status__c);
     }
+
+    @IsTest static void emptyHeartbeatRunsWithoutPacket() {
+        Test.setMock(HttpCalloutMock.class, new ReceiptMock());
+        Test.startTest();
+        WFC27_Engine.tick();
+        Test.stopTest();
+        System.assertEquals(0, [SELECT COUNT() FROM WFC27_Packet__c]);
+        System.assertNotEquals(null, [SELECT Last_Tick_At__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1].Last_Tick_At__c);
+    }
 }

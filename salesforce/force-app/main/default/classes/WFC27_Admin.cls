@@ -48,7 +48,7 @@ public with sharing class WFC27_Admin {
             token.getDescribe().fields.getMap().get('WFC27_Eligible__c').getDescribe().getType() != Schema.DisplayType.Boolean) throw new AuraHandledException('Add the WFC27_Eligible__c checkbox or checkbox formula first.');
         if (String.isBlank(postType) || !Pattern.matches('[a-z0-9_\\-]{1,20}', postType)) throw new AuraHandledException('Enter a valid WordPress post type slug.');
         if (!new Set<String>{'draft','publish','pending','private'}.contains(eligibleStatus)) throw new AuraHandledException('Select a supported eligible status.');
-        if ((draftDays != null && draftDays < 0) || (binDays != null && binDays < 0)) throw new AuraHandledException('Retention days cannot be negative.');
+        if ((draftDays != null && (draftDays < 0 || draftDays > 99999)) || (binDays != null && (binDays < 0 || binDays > 99999))) throw new AuraHandledException('Retention days must be between 0 and 99999.');
         List<WFC27_Object_Binding__c> rows = [SELECT Id, Name FROM WFC27_Object_Binding__c WHERE Object_API_Name__c = :objectApi LIMIT 1];
         WFC27_Object_Binding__c rule = rows.isEmpty() ? new WFC27_Object_Binding__c(Name=objectApi, Object_API_Name__c=objectApi) : rows[0];
         rule.WP_Post_Type__c = postType;
@@ -96,7 +96,7 @@ public with sharing class WFC27_Admin {
     @AuraEnabled
     public static Map<String,Object> status() {
         requireManage();
-        List<WFC27_Settings__c> settings = [SELECT Batch_Size__c, Last_Tick_At__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
+        List<WFC27_Settings__c> settings = [SELECT Batch_Size__c, Last_Tick_At__c, Last_Error__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
         Integer waiting = [SELECT COUNT() FROM WFC27_Queue__c WHERE Status__c = 'pending'];
         Integer errors = [SELECT COUNT() FROM WFC27_Packet__c WHERE Status__c = 'error'];
         Long totalWaitMs = 0;
@@ -111,6 +111,7 @@ public with sharing class WFC27_Admin {
             FROM WFC27_Packet__c ORDER BY CreatedDate DESC LIMIT 20];
         return new Map<String,Object>{'waiting' => waiting, 'errors' => errors, 'batchSize' => settings.isEmpty() ? 25 : settings[0].Batch_Size__c,
             'lastTrain' => settings.isEmpty() ? null : settings[0].Last_Tick_At__c,
+            'lastError' => settings.isEmpty() ? null : settings[0].Last_Error__c,
             'averageWaitSeconds' => waitSamples == 0 ? null : Math.round((Decimal)totalWaitMs / waitSamples / 1000),
             'nextExpected' => settings.isEmpty() || settings[0].Last_Tick_At__c == null ? null : settings[0].Last_Tick_At__c.addMinutes(1),
             'packets' => packets};

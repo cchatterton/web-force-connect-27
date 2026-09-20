@@ -6,6 +6,7 @@
         <members>WFC27_Config</members>
         <members>WFC27_Engine</members>
         <members>WFC27_Retention</members>
+        <members>WFC27_RetentionTest</members>
         <members>WFC27_Scheduler</members>
         <members>WFC27_Sender</members>
         <members>WFC27_TransportTest</members>
@@ -51,6 +52,7 @@
         <members>WFC27_Queue__c.Status__c</members>
         <members>WFC27_Settings__c.Batch_Size__c</members>
         <members>WFC27_Settings__c.Last_Base_Sync_At__c</members>
+        <members>WFC27_Settings__c.Last_Error__c</members>
         <members>WFC27_Settings__c.Last_Scan_At__c</members>
         <members>WFC27_Settings__c.Last_Tick_At__c</members>
         <name>CustomField</name>

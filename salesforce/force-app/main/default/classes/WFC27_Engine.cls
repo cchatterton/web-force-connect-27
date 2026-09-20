@@ -12,7 +12,7 @@ public without sharing class WFC27_Engine {
     }
 
     public static WFC27_Settings__c settings() {
-        List<WFC27_Settings__c> rows = [SELECT Id, Name, Batch_Size__c, Last_Tick_At__c, Last_Scan_At__c, Last_Base_Sync_At__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
+        List<WFC27_Settings__c> rows = [SELECT Id, Name, Batch_Size__c, Last_Tick_At__c, Last_Scan_At__c, Last_Base_Sync_At__c, Last_Error__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
         if (!rows.isEmpty()) return rows[0];
         WFC27_Settings__c row = new WFC27_Settings__c(Name='Default', Batch_Size__c=25);
         insert row;

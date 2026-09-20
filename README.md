@@ -21,6 +21,8 @@ Version: 0.1.0 development build. The WordPress plugin was activated and smoke-t
 
 Package-owned Salesforce objects are Object Binding, Field Binding, Queue, Packet, Map, Settings, and Deletion Acknowledgement. The customer-owned `WFC27_Eligible__c` checkbox or checkbox formula is created on selected source objects during setup, not bundled for a specific business object. A customer-owned post type must already be registered in WordPress. The package includes Apex services, scheduler, administrator console, permission set, and custom permission.
 
+The scheduled transport services run without record sharing so eligible records from all owners can be evaluated. A source field binding is used only when that field is readable to the scheduling user; the administrator must grant the required object and field access. Only explicitly bound values are sent to WordPress. The setup console requires the `WFC27_Manage` custom permission.
+
 ## Contract
 
 Content train from Salesforce:
@@ -74,6 +76,8 @@ Do not remove a customer's eligibility field when deactivating a binding. To per
 ## Validation and current limits
 
 PHP syntax, XML parsing, and Salesforce DX source conversion passed locally. A disposable WordPress 7.1.1 site verified activation, admin rendering, packet receipt, delayed completion, create/update of post and meta, bound-field protection, preservation of a local excerpt, local trash reporting, and the GitHub/Check for updates row links. Apex compilation, deployment, tests, Named Credential setup, and a complete cross-system record journey require the authenticated Salesforce developer org and remain unverified. Do not use this build in production before those checks pass.
+
+For another disposable local WordPress site, run `wp --path=/path/to/wordpress eval-file /path/to/web-force-connect-27/tests/wp-smoke.php` with the plugin active. The script refuses to run unless WordPress reports its environment type as `local`.
 
 The scanner reads 1,000 records per active object per train in ID order. This means a one-to-five-minute content latency is a target only where a full scan completes within that window; larger objects take longer, particularly when formula eligibility changes without updating `LastModifiedDate`. The console should be used to watch queue age and train health. A later scale release should separate priority change detection from the rolling formula scan.
 

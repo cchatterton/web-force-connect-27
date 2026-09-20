@@ -76,6 +76,7 @@ FIELDS = {
         "Last_Tick_At__c": ("DateTime", "Last Train At", None),
         "Last_Scan_At__c": ("DateTime", "Last Scan At", None),
         "Last_Base_Sync_At__c": ("DateTime", "Last Base Sync At", None),
+        "Last_Error__c": ("LongTextArea", "Last Transport Error", 32768),
     },
     "WFC27_Deletion_Ack__c": {
         "Source_ID__c": ("Text", "Salesforce Source ID", 18),

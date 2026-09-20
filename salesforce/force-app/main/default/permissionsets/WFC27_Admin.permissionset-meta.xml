@@ -225,6 +225,11 @@
   </fieldPermissions>
   <fieldPermissions>
     <editable>true</editable>
+    <field>WFC27_Settings__c.Last_Error__c</field>
+    <readable>true</readable>
+  </fieldPermissions>
+  <fieldPermissions>
+    <editable>true</editable>
     <field>WFC27_Settings__c.Last_Scan_At__c</field>
     <readable>true</readable>
   </fieldPermissions>

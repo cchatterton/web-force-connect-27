@@ -16,7 +16,7 @@ public without sharing class WFC27_BaseSync implements Database.Batchable<SObjec
         Map<String,WFC27_Map__c> maps = new Map<String,WFC27_Map__c>();
         for (WFC27_Map__c row : [SELECT Id, Source_ID__c FROM WFC27_Map__c WHERE Source_ID__c IN :ids]) maps.put(row.Source_ID__c, row);
         Map<String,WFC27_Queue__c> waiting = new Map<String,WFC27_Queue__c>();
-        for (WFC27_Queue__c row : [SELECT Id, Source_ID__c FROM WFC27_Queue__c WHERE Source_ID__c IN :ids AND Status__c = 'pending']) waiting.put(row.Source_ID__c, row);
+        for (WFC27_Queue__c row : [SELECT Id, Source_ID__c FROM WFC27_Queue__c WHERE Source_ID__c IN :ids AND Status__c IN ('pending','sent')]) waiting.put(row.Source_ID__c, row);
         List<WFC27_Map__c> newMaps = new List<WFC27_Map__c>();
         List<WFC27_Queue__c> newQueue = new List<WFC27_Queue__c>();
         for (SObject record : scope) {

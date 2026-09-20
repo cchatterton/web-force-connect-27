@@ -4,6 +4,7 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
 
     public void execute(QueueableContext context) {
         WFC27_Packet__c packet;
+        Boolean receiptConfirmed = false;
         Map<String,Object> body;
         if (packetId == null) {
             body = new Map<String,Object>{'summary' => new Map<String,Object>(), 'posts' => new List<Object>(), 'postmeta' => new List<Object>()};
@@ -35,6 +36,7 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
             if (packet != null && received != String.valueOf(packet.Id)) throw new WFC27_TransportException('WordPress did not acknowledge this packet');
             if (packet != null) {
                 packet.Status__c = 'received'; packet.Sent_At__c = System.now(); update packet;
+                receiptConfirmed = true;
                 Set<String> sentIds = new Set<String>();
                 for (WFC27_Queue__c item : [SELECT Source_ID__c FROM WFC27_Queue__c WHERE Packet__c = :packet.Id]) sentIds.add(item.Source_ID__c);
                 List<WFC27_Map__c> sentMaps = [SELECT Id, Last_Sent_At__c FROM WFC27_Map__c WHERE Source_ID__c IN :sentIds];
@@ -48,9 +50,15 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
             }
             if (!ackRows.isEmpty()) { for (WFC27_Deletion_Ack__c row : ackRows) row.Status__c = 'sent'; update ackRows; }
             processResults(result);
+            WFC27_Settings__c healthy = WFC27_Engine.settings();
+            if (healthy.Last_Error__c != null) { healthy.Last_Error__c = null; update healthy; }
         } catch (Exception error) {
-            if (packet != null) { packet.Status__c = 'error'; packet.Error__c = error.getMessage().left(32768); update packet; }
-            else System.debug(LoggingLevel.ERROR, 'WFC27 heartbeat failed: ' + error.getMessage());
+            if (packet != null) { packet.Status__c = receiptConfirmed ? 'received' : 'error'; packet.Error__c = error.getMessage().left(32768); update packet; }
+            else {
+                WFC27_Settings__c settings = WFC27_Engine.settings();
+                settings.Last_Error__c = error.getMessage().left(32768);
+                update settings;
+            }
         }
     }
 

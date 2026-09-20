@@ -8,6 +8,7 @@
             <p>Last train: <lightning-formatted-date-time value={status.lastTrain} year="numeric" month="short" day="2-digit" hour="2-digit" minute="2-digit"></lightning-formatted-date-time></p>
             <p>Next expected: <lightning-formatted-date-time value={status.nextExpected} hour="2-digit" minute="2-digit"></lightning-formatted-date-time></p>
             <p>Waiting: {status.waiting} · Packet errors: {status.errors}</p>
+            <template if:true={status.lastError}><p class="slds-text-color_error" role="alert">Last transport error: {status.lastError}</p></template>
             <p>Average content wait: {status.averageWaitSeconds} seconds (latest 100 completed)</p>
             <lightning-input type="number" label="Items per train" min="1" max="100" value={status.batchSize} onchange={changeBatch}></lightning-input>
             <lightning-button label="Save batch size" onclick={saveBatch} class="slds-m-top_small"></lightning-button>
