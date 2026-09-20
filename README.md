@@ -2,7 +2,7 @@
 
 AlphaSys WFC27 is a Salesforce-to-WordPress content transport. Salesforce selects eligible records and sends bound fields; WordPress stages packets, creates or updates posts, and returns identity and processing results on later one-minute trains. Fields that Salesforce sends are protected in WordPress. Excerpt, featured image, AlphaBlocks, rows, and other fields stay local unless explicitly bound.
 
-Version: 0.1.0 development build. The WordPress plugin was activated and smoke-tested on local WordPress 7.1.1 / PHP 8.3. Salesforce metadata was deployed to the designated developer org on 2026-09-20 for further testing; this is not a released unmanaged package.
+Version: 0.1.1 development build. The WordPress plugin was activated and smoke-tested locally. Salesforce metadata was deployed to the designated developer org on 2026-09-20 for further testing; this is not a released unmanaged package.
 
 ## Project declaration
 
@@ -56,8 +56,8 @@ An empty train has no packet ID and still carries acknowledgements and retrieves
 ## Setup
 
 1. Install the WordPress plugin from its ZIP and activate it. Register the target post type first. Make WP-Cron reliable with a server scheduler; the WordPress inbox worker is scheduled every minute.
-2. Create a dedicated WordPress user with the WFC27 Integration role and issue an Application Password. Limit this credential to the integration. The REST endpoint is shown on the WFC27 admin screen and requires `wfc27_receive`.
-3. Deploy the Salesforce source to the designated Developer Edition org after authenticating the CLI and confirming its username and instance URL. Assign `WFC27_Admin` to the administrator. Configure a Salesforce Named Credential named `WFC27_WordPress` with the WordPress site base URL and Basic authentication using the integration user's Application Password. The credential must permit the Apex callout path `/wp-json/wfc27/v1/train`.
+2. Create an Application Password for a WordPress administrator. The REST endpoint is shown on the WFC27 admin screen and accepts authenticated administrators by default. For a narrower connection, select another WordPress user under **WFC27 → Connection setup** and create an Application Password for that user. WFC27 does not require any custom WordPress role or capability.
+3. Deploy the Salesforce source to the designated Developer Edition org after authenticating the CLI and confirming its username and instance URL. Assign `WFC27_Admin` to the administrator. Configure a Salesforce Named Credential named `WFC27_WordPress` with the WordPress site base URL and Basic authentication using the integration user's Application Password. The sender uses `/?rest_route=/wfc27/v1/train`, which also works on sites where pretty REST URLs are unavailable.
 4. For each source object, add `WFC27_Eligible__c` as a checkbox or checkbox formula in Object Manager, or generate its deployment source with `python3 scripts/eligibility_field.py add Course__c`. Review and deploy the generated field in the customer org. The console shows objects with and without a valid flag.
 5. Add an object binding and field bindings in the WFC27 console. Select the WordPress post type, status when eligible, and optional draft/bin retention days. Only activate once the target post type and field mappings are ready. If a field is mapped to `post_status`, its value overrides the fixed eligible status; it must be a supported WordPress status.
 6. Start the one-minute and daily-retention schedules from the console. Confirm live transport with a test record, then use **Queue base sync** on each active object binding. The rolling scan also discovers eligible records; the batch job is the controlled full pass and can be used after binding changes. Monitor both consoles and trace a Salesforce ID through Map, Queue, Packet, and WordPress inbox.

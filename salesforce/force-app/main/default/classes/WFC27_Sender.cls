@@ -21,7 +21,7 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
         summary.put('acknowledged_results', ackIds);
         summary.put('acknowledged_deletions', deletionAcks);
         HttpRequest request = new HttpRequest();
-        request.setEndpoint('callout:WFC27_WordPress/wp-json/wfc27/v1/train');
+        request.setEndpoint('callout:WFC27_WordPress/?rest_route=/wfc27/v1/train');
         request.setMethod('POST');
         request.setHeader('Content-Type', 'application/json');
         request.setTimeout(30000);

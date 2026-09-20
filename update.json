@@ -1,0 +1,4 @@
+{
+  "version": "0.1.1",
+  "body": "Use standard WordPress administrator access by default, with an optional selected integration user. No custom role or capability is required."
+}

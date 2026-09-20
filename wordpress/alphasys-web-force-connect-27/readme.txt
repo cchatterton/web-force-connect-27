@@ -3,7 +3,7 @@ Contributors: alphasys
 Tags: salesforce, integration, content, sync
 Requires at least: 6.0
 Tested up to: 7.1.1
-Stable tag: 0.1.0
+Stable tag: 0.1.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -16,9 +16,12 @@ WFC27 receives authenticated JSON packets from a configured Salesforce org. It s
 
 == Installation ==
 
-Install and activate the plugin. Create a dedicated user with the WFC27 Integration role and an Application Password. Set the Salesforce outbound credential to the HTTPS endpoint shown on the WFC27 admin page. Register the destination post types before sending content. For reliable background processing, connect WP-Cron to a server scheduler.
+Install and activate the plugin. Create an Application Password for a WordPress administrator. Optionally, select a different authorized user in WFC27 settings and create an Application Password for that user. Set the Salesforce outbound credential to the HTTPS endpoint shown on the WFC27 admin page. Register the destination post types before sending content. For reliable background processing, connect WP-Cron to a server scheduler.
 
 == Changelog ==
+
+= 0.1.1 =
+Use standard administrator access by default or an optionally selected receiver user; no custom capability or role is required.
 
 = 0.1.0 =
 * Initial packet receiver, inbound queue, identity map, and admin status page.

@@ -13,7 +13,8 @@ function wfc27_register_rest_routes() {
 }
 
 function wfc27_can_receive_train() {
-	return current_user_can( 'wfc27_receive' );
+	$receiver_id = (int) get_option( 'wfc27_receiver_user_id', 0 );
+	return current_user_can( 'manage_options' ) || ( $receiver_id > 0 && get_current_user_id() === $receiver_id );
 }
 
 function wfc27_receive_train( WP_REST_Request $request ) {

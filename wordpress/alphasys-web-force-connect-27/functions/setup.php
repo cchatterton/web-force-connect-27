@@ -5,11 +5,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function wfc27_activate() {
 	wfc27_create_tables();
-	add_role( 'wfc27_integration', 'WFC27 Integration', array( 'read' => true, 'wfc27_receive' => true ) );
-	$role = get_role( 'administrator' );
-	if ( $role ) {
-		$role->add_cap( 'wfc27_receive' );
-	}
 	wfc27_schedule_worker();
 }
 

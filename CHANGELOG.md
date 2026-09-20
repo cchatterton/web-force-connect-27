@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 - development
+
+- Let WordPress administrators receive trains by default, with an optional selected receiver user.
+- Remove the custom WordPress role and capability requirement.
+- Use the query-style REST route for Salesforce callouts so sites without pretty REST URLs work.
+
 ## 0.1.0 - development
 
 - Added Salesforce binding, queue, packet, identity, retention, scheduler, and admin console source.

@@ -23,13 +23,32 @@ if ( ! $admins ) {
 	throw new RuntimeException( 'No administrator exists on this local test site.' );
 }
 wp_set_current_user( (int) $admins[0]->ID );
+$original_receiver = get_option( 'wfc27_receiver_user_id', 0 );
 global $wpdb;
 $suffix = str_pad( (string) random_int( 1, 999999999 ), 15, '0', STR_PAD_LEFT );
 $sf_id = 'a00' . $suffix;
 $packet_id = 'a01' . $suffix;
 $post_id = 0;
+$test_user_id = 0;
 
 try {
+	update_option( 'wfc27_receiver_user_id', 0 );
+	if ( ! wfc27_can_receive_train() ) {
+		throw new RuntimeException( 'Administrator default access failed.' );
+	}
+	$test_user_id = wp_create_user( 'wfc27-test-' . $suffix, wp_generate_password(), 'wfc27-test-' . $suffix . '@example.invalid' );
+	if ( is_wp_error( $test_user_id ) ) {
+		throw new RuntimeException( $test_user_id->get_error_message() );
+	}
+	wp_set_current_user( $test_user_id );
+	if ( wfc27_can_receive_train() ) {
+		throw new RuntimeException( 'Unselected non-administrator was allowed.' );
+	}
+	update_option( 'wfc27_receiver_user_id', $test_user_id );
+	if ( ! wfc27_can_receive_train() ) {
+		throw new RuntimeException( 'Selected receiver was denied.' );
+	}
+	wp_set_current_user( (int) $admins[0]->ID );
 	$payload = array(
 		'summary' => array( 'packet_id' => $packet_id, 'posts' => 1, 'postmeta' => 1 ),
 		'posts' => array( array( 'sf_id' => $sf_id, 'post_type' => 'post', 'post_title' => 'WFC27 train test', 'post_status' => 'draft' ) ),
@@ -63,7 +82,7 @@ try {
 	if ( $still_pending ) {
 		throw new RuntimeException( 'Acknowledged result was returned again.' );
 	}
-	echo "WFC27 train test passed: receipt, duplicate, worker, delayed result, acknowledgement.\n";
+	echo "WFC27 train test passed: authorization, receipt, duplicate, worker, delayed result, acknowledgement.\n";
 } finally {
 	if ( $post_id ) {
 		$GLOBALS['wfc27_applying_packet'] = true;
@@ -72,4 +91,10 @@ try {
 	}
 	$wpdb->delete( wfc27_identity_table(), array( 'sf_id' => $sf_id ), array( '%s' ) );
 	$wpdb->delete( wfc27_packets_table(), array( 'packet_id' => $packet_id ), array( '%s' ) );
+	update_option( 'wfc27_receiver_user_id', $original_receiver );
+	wp_set_current_user( (int) $admins[0]->ID );
+	if ( $test_user_id && ! is_wp_error( $test_user_id ) ) {
+		require_once ABSPATH . 'wp-admin/includes/user.php';
+		wp_delete_user( $test_user_id );
+	}
 }

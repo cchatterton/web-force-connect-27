@@ -22,6 +22,8 @@ if ( ! $admins ) {
 	throw new RuntimeException( 'No administrator exists on this local test site.' );
 }
 wp_set_current_user( (int) $admins[0]->ID );
+$original_receiver = get_option( 'wfc27_receiver_user_id', 0 );
+update_option( 'wfc27_receiver_user_id', (int) $admins[0]->ID );
 $suffix = str_pad( (string) random_int( 1, 999999999 ), 15, '0', STR_PAD_LEFT );
 $sf_id = 'a00' . $suffix;
 $packet_one = 'a01' . $suffix;
@@ -62,4 +64,5 @@ $fifth = wfc27_smoke_train( array( 'summary' => array( 'acknowledged_results' =>
 if ( 1 !== count( $fifth['deleted'] ) || $wp_id !== (int) $fifth['deleted'][0]['wp_id'] ) {
 	throw new RuntimeException( 'The local deletion was not reported.' );
 }
+update_option( 'wfc27_receiver_user_id', $original_receiver );
 echo "WFC27 WordPress smoke passed.\n";

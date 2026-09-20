@@ -9,6 +9,20 @@ function wfc27_register_admin_page() {
 }
 
 add_action( 'admin_post_wfc27_run_inbox', 'wfc27_admin_run_inbox' );
+add_action( 'admin_post_wfc27_save_receiver', 'wfc27_admin_save_receiver' );
+function wfc27_admin_save_receiver() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'Insufficient permissions.' );
+	}
+	check_admin_referer( 'wfc27_save_receiver' );
+	$user_id = isset( $_POST['receiver_user_id'] ) ? absint( wp_unslash( $_POST['receiver_user_id'] ) ) : 0;
+	if ( $user_id && ! get_userdata( $user_id ) ) {
+		wp_die( 'The selected WordPress user does not exist.' );
+	}
+	update_option( 'wfc27_receiver_user_id', $user_id, false );
+	wp_safe_redirect( admin_url( 'admin.php?page=wfc27&receiver_saved=1' ) );
+	exit;
+}
 function wfc27_admin_run_inbox() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( 'Insufficient permissions.' );
@@ -71,7 +85,20 @@ function wfc27_render_admin_page() {
 		<?php endforeach; ?>
 		</tbody></table>
 		<h2>Connection setup</h2>
-		<p>Create a dedicated WordPress user with the WFC27 Integration role. Create an Application Password for that user, then configure the Salesforce outbound credential to call the endpoint above over HTTPS. The password belongs in Salesforce credential storage, not in either codebase.</p>
+		<p>By default, a WordPress administrator can send trains using an Application Password. Optionally, choose another user to authorize a dedicated connection. Store the Application Password in Salesforce's credential settings. No special WordPress role or capability is required.</p>
+		<?php if ( isset( $_GET['receiver_saved'] ) ) : ?><div class="notice notice-success"><p>Train receiver saved.</p></div><?php endif; ?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="wfc27_save_receiver">
+			<?php wp_nonce_field( 'wfc27_save_receiver' ); ?>
+			<label for="wfc27-receiver-user">WordPress train receiver</label>
+			<select id="wfc27-receiver-user" name="receiver_user_id">
+				<option value="0">Administrators only (default)</option>
+				<?php foreach ( get_users( array( 'orderby' => 'display_name' ) ) as $user ) : ?>
+					<option value="<?php echo esc_attr( (string) $user->ID ); ?>" <?php selected( (int) get_option( 'wfc27_receiver_user_id', 0 ), (int) $user->ID ); ?>><?php echo esc_html( $user->display_name . ' (' . $user->user_login . ')' ); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<?php submit_button( 'Save receiver', 'primary', 'submit', false ); ?>
+		</form>
 	</div>
 	<?php
 }
