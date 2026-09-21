@@ -1,4 +1,4 @@
 {
-  "version": "0.3.6",
-  "body": "Show the count of packets waiting for first pickup at each station, separate from train timing."
+  "version": "0.3.7",
+  "body": "Restore the waiting packet count inside both train widgets and align their heartbeat styling."
 }

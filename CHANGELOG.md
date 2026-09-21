@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.7
+- Put the waiting packet count back inside the WordPress and Salesforce train widgets; remove the separate WordPress station line.
+- Match widget colours, heading and countdown scale, bar size, and count placement across both platforms.
+
 ## 0.3.6
 - Show the number of packets waiting for first pickup at each station, separate from the train countdown.
 

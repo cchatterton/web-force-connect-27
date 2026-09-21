@@ -3,7 +3,7 @@
 	padding: 16px;
 	border: 1px solid #c3c4c7;
 	border-radius: 8px;
-	background: #f6f7f7;
+	background: #f9fafb;
 	margin: 0;
 }
 
@@ -22,6 +22,9 @@
 
 .wfc27-train-widget h2 {
 	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	line-height: 1.2;
 }
 
 .wfc27-train-countdown {
@@ -47,6 +50,8 @@
 .wfc27-heartbeat-fill {
 	height: 100%;
 	width: 0;
-	background: #008a20;
+	background: #2e844a;
 	transition: width 0.25s linear;
 }
+
+.wfc27-train-widget > p:last-child { margin-top: 8px; }

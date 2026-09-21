@@ -98,6 +98,7 @@ function wfc27_render_admin_page() {
 			<div id="wfc27-train-countdown" class="wfc27-train-countdown" aria-live="off">01:00</div>
 			<p id="wfc27-heartbeat-label" aria-live="polite">Waiting for train status</p>
 			<div class="wfc27-heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-state="<?php echo esc_attr( get_option( 'wfc27_train_state', 'running' ) ); ?>" data-last="<?php echo esc_attr( $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : '' ); ?>"><div class="wfc27-heartbeat-fill"></div></div>
+			<p>Packets waiting to send: <strong id="wfc27-station-waiting"><?php echo esc_html( (string) $waiting ); ?></strong></p>
 		</section>
 		<section class="wfc27-endpoint-widget" aria-label="Receive endpoint">
 			<h2>Receive endpoint</h2>
@@ -131,7 +132,6 @@ function wfc27_render_admin_page() {
 		</div>
 		</section>
 		</div>
-		<p class="wfc27-station-summary"><a href="<?php echo esc_url( wfc27_station_url() ); ?>">Sync Packets</a> · Packets waiting at WordPress station: <strong id="wfc27-station-waiting"><?php echo esc_html( (string) $waiting ); ?></strong></p>
 		<h2>Recent Sync</h2>
 		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Packets sent</th><th>Packets received</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="3">Loading syncs…</td></tr></tbody></table>
 	</div>
