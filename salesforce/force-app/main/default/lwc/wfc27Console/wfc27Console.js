@@ -20,8 +20,8 @@ export default class Wfc27Console extends LightningElement {
   tripHour = String(new Date().getUTCHours());
   tripPeriods = [{ label: 'Last hour', value: 'hour' }, { label: 'Last 24 hours', value: 'day' }, { label: 'Day (UTC)', value: 'date' }, { label: 'Hour in day (UTC)', value: 'date_hour' }];
   tripHours = Array.from({ length: 24 }, (_, hour) => ({ label: `${String(hour).padStart(2, '0')}:00`, value: String(hour) }));
-  tripColumns = [{ label: 'Departed', fieldName: 'CreatedDate', type: 'date', typeAttributes: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' } },
-    { label: 'Sent', fieldName: 'Sent_Count__c', type: 'number' }, { label: 'Received', fieldName: 'Received_Count__c', type: 'number' },
+  tripColumns = [{ label: 'Departed', fieldName: 'CreatedDate', type: 'date', typeAttributes: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit' } },
+    { label: 'Packets sent', fieldName: 'Sent_Count__c', type: 'number' }, { label: 'Packets received', fieldName: 'Received_Count__c', type: 'number' },
     { label: 'Result', fieldName: 'Result__c' }, { label: 'Error', fieldName: 'Error__c' }];
   stationColumns = [{ label: 'ID', fieldName: 'Envelope_ID__c' }, { label: 'Status', fieldName: 'Status__c' },
     { label: 'JSON', fieldName: 'preview' }];

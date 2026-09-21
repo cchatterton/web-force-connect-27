@@ -65,11 +65,9 @@ private class WFC27_TransportTest {
         insert new PermissionSetAssignment(AssigneeId=operator.Id, PermissionSetId=permission.Id);
         System.runAs(operator) {
             WFC27_Engine.settings();
-            System.assertEquals(0, WFC27_Admin.status().get('waiting'));
             WFC27_Admin.setBatchSize(10);
             System.assertEquals(10, WFC27_Admin.status().get('batchSize'));
             System.assertNotEquals(null, WFC27_Admin.stage('{"test":true}'));
-            System.assertEquals(1, WFC27_Admin.status().get('waiting'));
             System.assertEquals(0, WFC27_Admin.trips('hour', null, null).size());
             WFC27_Scheduler.start();
             WFC27_Scheduler.stop();

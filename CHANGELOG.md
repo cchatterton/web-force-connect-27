@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.5
+- Remove queue and receipt counters from both train widgets. Recent Sync counts explicitly refer to sealed packets, not contents.
+
 ## 0.3.4
 - WordPress distinguishes packets awaiting a receipt from packets not yet picked up, reoffers unacknowledged packets, and locks their payload after pickup.
 - Salesforce shows elapsed overdue time while awaiting a late train.

@@ -4,8 +4,6 @@
 	const fill = bar.querySelector('.wfc27-heartbeat-fill');
 	const label = document.getElementById('wfc27-heartbeat-label');
 	const countdown = document.getElementById('wfc27-train-countdown');
-	const waiting = document.getElementById('wfc27-waiting-count');
-	const pending = document.getElementById('wfc27-pending-count');
 	const tripRows = document.getElementById('wfc27-trip-rows');
 	const tripFilter = document.getElementById('wfc27-trip-filter');
 	const tripDay = document.getElementById('wfc27-trip-day');
@@ -52,8 +50,6 @@
 			if (!result.success) return;
 			last = result.data.last ? Date.parse(result.data.last) : NaN;
 			state = result.data.state;
-			waiting.textContent = `Items waiting to send: ${result.data.waiting}`;
-			pending.textContent = `Awaiting receipt: ${result.data.pending}`;
 			tripRows.replaceChildren();
 			if (!result.data.trips.length) {
 				const row = tripRows.insertRow();

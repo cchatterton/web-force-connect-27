@@ -1,4 +1,4 @@
 {
-  "version": "0.3.4",
-  "body": "Show pending receipts separately and keep packet payloads immutable after first pickup; show overdue time in Salesforce."
+  "version": "0.3.5",
+  "body": "Keep train widgets focused on timing and controls; label trip counts explicitly as packets."
 }

@@ -11,7 +11,6 @@
           <div class="train-countdown" aria-live="off">{heartbeatCountdown}</div>
           <p class="train-state" aria-live="polite">{trainStateLabel}</p>
           <div class="heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow={heartbeatPercent}><div class="heartbeat-fill" style={heartbeatStyle}></div></div>
-          <p>Items waiting to send: {status.waiting}</p>
         </section>
         <template if:true={status.lastError}><p class="slds-text-color_error" role="alert">Last transport error: {status.lastError}</p></template>
         <lightning-input type="number" label="Items per train" min="1" max="100" value={status.batchSize} onchange={changeBatch}></lightning-input>
