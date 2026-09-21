@@ -22,7 +22,11 @@ public without sharing class WFC27_Retention implements Schedulable, Database.Ba
         }
         if (!queue.isEmpty()) insert queue;
     }
-    public void finish(Database.BatchableContext context) {}
+    public void finish(Database.BatchableContext context) {
+        Datetime cutoff = System.now().addDays(-30);
+        List<WFC27_Trip__c> expired = [SELECT Id FROM WFC27_Trip__c WHERE CreatedDate < :cutoff LIMIT 10000];
+        if (!expired.isEmpty()) delete expired;
+    }
     public static void startDaily() {
         for (CronTrigger job : [SELECT Id FROM CronTrigger WHERE CronJobDetail.Name = 'WFC27 Retention']) System.abortJob(job.Id);
         System.schedule('WFC27 Retention', '0 0 2 * * ?', new WFC27_Retention());
