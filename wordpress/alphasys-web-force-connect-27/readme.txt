@@ -1,39 +1,31 @@
 === AlphaSys Web Force Connect 27 ===
 Contributors: alphasys
-Tags: salesforce, integration, content, sync
+Tags: salesforce, integration, transport, json
 Requires at least: 6.0
 Tested up to: 7.1.1
-Stable tag: 0.1.4
+Stable tag: 0.2.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Receive Salesforce content packets as WordPress posts and postmeta.
+Move opaque JSON between durable WordPress and Salesforce stations on a one-minute train.
 
 == Description ==
 
-WFC27 receives authenticated JSON packets from a configured Salesforce org. It stages each packet, applies its bound post and postmeta values, and returns completed results in later train responses. Salesforce-sourced values are protected from local editing; unbound WordPress fields remain local.
+WFC27 receives authenticated station trains from Salesforce. It stores inbound JSON in a WordPress station table, returns receipts, and can include locally staged outbound JSON in the same response. It does not create or edit WordPress posts, process meta, or apply business rules. A separate data processing engine can later produce and consume station items. Train trips, including empty trains, are visible in the admin page.
 
 == Installation ==
 
-Install and activate the plugin. Create an Application Password for a WordPress administrator. Optionally, select a different authorized user in WFC27 settings and create an Application Password for that user. Set the Salesforce outbound credential to the HTTPS endpoint shown on the WFC27 admin page. Register the destination post types before sending content. For reliable background processing, connect WP-Cron to a server scheduler.
+Install and activate the plugin. Create an Application Password for a WordPress administrator or choose a dedicated receiver user in WFC27 settings. Set the Salesforce Named Credential to the HTTPS endpoint shown on the WFC27 admin page. The Salesforce package creates the counterpart station and controls the one-minute train.
 
 == Changelog ==
 
-= 0.1.3 =
-Show the Sync Train Arriving countdown widget and the paused state sent by Salesforce. Remove duplicate last and next train timestamps.
+= 0.2.0 =
+Transport-only stations in both directions. Removed content processing and post/meta bindings from the plugin. Existing legacy tables remain untouched.
 
-= 0.1.2 =
-Refresh the WordPress train heartbeat and queue counts automatically, with a 60-second progress bar that resets when a train arrives.
-
-= 0.1.1 =
-Use standard administrator access by default or an optionally selected receiver user; no custom capability or role is required.
-
-= 0.1.0 =
-* Initial packet receiver, inbound queue, identity map, and admin status page.
+= 0.1.4 =
+Show recent train trips, including empty packets, with time filters.
 
 == External services ==
 
-The plugin receives post fields, postmeta values, and Salesforce record IDs from the Salesforce org configured by the site administrator. It returns WordPress post and meta IDs, processing status, and deletion reports in the response to each call. It does not initiate calls to Salesforce.
-
-The connection is to the administrator's own Salesforce org. Salesforce legal terms: https://www.salesforce.com/company/legal/customer-agreements/ . Salesforce privacy information: https://www.salesforce.com/company/legal/privacy/ .
+The configured Salesforce org initiates authenticated HTTP calls to this plugin's station endpoint. The request and response exchange opaque JSON envelopes and transport receipts. The plugin does not initiate calls to Salesforce. The connection is to the site administrator's own Salesforce org. Salesforce legal terms: https://www.salesforce.com/company/legal/customer-agreements/ . Salesforce privacy information: https://www.salesforce.com/company/legal/privacy/ .

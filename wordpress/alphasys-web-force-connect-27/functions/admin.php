@@ -8,7 +8,6 @@ function wfc27_register_admin_page() {
 	add_menu_page( 'Web Force Connect 27', 'WFC27', 'manage_options', 'wfc27', 'wfc27_render_admin_page', 'dashicons-update', 65 );
 }
 
-add_action( 'admin_post_wfc27_run_inbox', 'wfc27_admin_run_inbox' );
 add_action( 'admin_post_wfc27_save_receiver', 'wfc27_admin_save_receiver' );
 add_action( 'wp_ajax_wfc27_status', 'wfc27_admin_ajax_status' );
 add_action( 'admin_enqueue_scripts', 'wfc27_admin_enqueue_status' );
@@ -30,7 +29,7 @@ function wfc27_admin_ajax_status() {
 	}
 	global $wpdb;
 	$last = get_option( 'wfc27_last_heartbeat', '' );
-	$counts = $wpdb->get_results( 'SELECT status, COUNT(*) AS total FROM ' . wfc27_packets_table() . ' GROUP BY status', ARRAY_A );
+	$counts = $wpdb->get_results( 'SELECT status, COUNT(*) AS total FROM ' . wfc27_station_table() . ' GROUP BY status', ARRAY_A );
 	$parts = array();
 	$filter = isset( $_POST['trip_filter'] ) ? sanitize_key( wp_unslash( $_POST['trip_filter'] ) ) : 'hour';
 	$day = isset( $_POST['trip_day'] ) ? sanitize_text_field( wp_unslash( $_POST['trip_day'] ) ) : '';
@@ -44,7 +43,7 @@ function wfc27_admin_ajax_status() {
 		$since = $day . ' ' . sprintf( '%02d', $hour ) . ':00:00';
 		$until = gmdate( 'Y-m-d H:i:s', strtotime( $since . ' UTC' ) + HOUR_IN_SECONDS );
 	}
-	$trips = $wpdb->get_results( $wpdb->prepare( 'SELECT id,packet_id,post_count,meta_count,received_at FROM ' . wfc27_trips_table() . ' WHERE received_at >= %s AND received_at < %s ORDER BY id DESC LIMIT 120', $since, $until ), ARRAY_A );
+	$trips = $wpdb->get_results( $wpdb->prepare( 'SELECT id,sent_count,received_count,occurred_at FROM ' . wfc27_trips_table() . ' WHERE occurred_at >= %s AND occurred_at < %s ORDER BY id DESC LIMIT 120', $since, $until ), ARRAY_A );
 	foreach ( $counts as $count ) {
 		$parts[] = ucfirst( $count['status'] ) . ': ' . $count['total'];
 	}
@@ -68,36 +67,16 @@ function wfc27_admin_save_receiver() {
 	wp_safe_redirect( admin_url( 'admin.php?page=wfc27&receiver_saved=1' ) );
 	exit;
 }
-function wfc27_admin_run_inbox() {
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( 'Insufficient permissions.' );
-	}
-	check_admin_referer( 'wfc27_run_inbox' );
-	wfc27_process_pending_packets( 20 );
-	wp_safe_redirect( admin_url( 'admin.php?page=wfc27' ) );
-	exit;
-}
-
 function wfc27_render_admin_page() {
 	global $wpdb;
-	$packets = wfc27_packets_table();
-	$identity = wfc27_identity_table();
-	$counts = $wpdb->get_results( "SELECT status, COUNT(*) AS total FROM {$packets} GROUP BY status", ARRAY_A );
-	$rows = $wpdb->get_results( "SELECT id,packet_id,status,received_at,processed_at,error_text FROM {$packets} ORDER BY id DESC LIMIT 50", ARRAY_A );
-	$mapped = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$identity} WHERE wp_post_id > 0" );
+	$station = wfc27_station_table();
+	$counts = $wpdb->get_results( "SELECT status, COUNT(*) AS total FROM {$station} GROUP BY status", ARRAY_A );
+	$rows = $wpdb->get_results( "SELECT envelope_id,status,json FROM {$station} ORDER BY envelope_id DESC LIMIT 50", ARRAY_A );
 	$last = get_option( 'wfc27_last_heartbeat', '' );
-	$average = $wpdb->get_var( "SELECT AVG(TIMESTAMPDIFF(SECOND,received_at,processed_at)) FROM {$packets} WHERE status IN ('completed','reported') AND processed_at IS NOT NULL AND received_at > UTC_TIMESTAMP() - INTERVAL 1 DAY" );
-	$source_id = isset( $_GET['sf_id'] ) ? sanitize_text_field( wp_unslash( $_GET['sf_id'] ) ) : '';
-	$journey = array();
-	$source_identity = null;
-	if ( preg_match( '/^[A-Za-z0-9]{15,18}$/', $source_id ) ) {
-		$source_identity = wfc27_identity_for_sf( $source_id );
-		$journey = $wpdb->get_results( $wpdb->prepare( "SELECT packet_id,status,received_at,processed_at,error_text FROM {$packets} WHERE payload LIKE %s OR result_json LIKE %s ORDER BY id DESC LIMIT 25", '%' . $wpdb->esc_like( $source_id ) . '%', '%' . $wpdb->esc_like( $source_id ) . '%' ), ARRAY_A );
-	}
 	?>
 	<div class="wrap">
 		<h1>Web Force Connect 27</h1>
-		<p>Salesforce packets are received here, then applied to this site's posts and postmeta.</p>
+		<p>WFC27 carries JSON between two stations. Processing engines are not installed; received items remain staged.</p>
 		<section class="wfc27-train-widget" aria-label="WordPress sync train">
 			<h2>Sync Train Arriving</h2>
 			<div id="wfc27-train-countdown" class="wfc27-train-countdown" aria-live="off">01:00</div>
@@ -110,34 +89,13 @@ function wfc27_render_admin_page() {
 			<label>Date <input id="wfc27-trip-day" type="date" value="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>"></label>
 			<label>Hour <select id="wfc27-trip-hour"><?php for ( $hour = 0; $hour < 24; $hour++ ) : ?><option value="<?php echo esc_attr( (string) $hour ); ?>"><?php echo esc_html( sprintf( '%02d:00', $hour ) ); ?></option><?php endfor; ?></select></label>
 		</div>
-		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Packet</th><th>Posts</th><th>Meta</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="4">Loading trips…</td></tr></tbody></table>
-		<table class="widefat striped"><tbody>
-		<tr><th>Receive endpoint</th><td><code><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></td></tr>
-		<tr><th>Mapped posts</th><td><?php echo esc_html( (string) $mapped ); ?></td></tr>
-		<tr><th>Average processing wait, last 24 hours</th><td><?php echo esc_html( null === $average ? 'No completed packets' : round( (float) $average ) . ' seconds' ); ?></td></tr>
-		</tbody></table>
-		<h2>Queue</h2>
+		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Sent</th><th>Received</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="3">Loading trips…</td></tr></tbody></table>
+		<p><strong>Receive endpoint:</strong> <code><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></p>
+		<h2>Station</h2>
 		<p id="wfc27-queue-counts"><?php foreach ( $counts as $count ) { echo esc_html( ucfirst( $count['status'] ) . ': ' . $count['total'] ) . ' &nbsp; '; } ?></p>
-		<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
-			<input type="hidden" name="page" value="wfc27">
-			<label for="wfc27-sf-id">Trace Salesforce record ID</label>
-			<input id="wfc27-sf-id" name="sf_id" value="<?php echo esc_attr( $source_id ); ?>" pattern="[A-Za-z0-9]{15,18}">
-			<?php submit_button( 'Show journey', 'secondary', 'submit', false ); ?>
-		</form>
-		<?php if ( $source_id ) : ?>
-			<p><?php echo esc_html( $source_identity ? 'Mapped WordPress post ID: ' . $source_identity['wp_post_id'] : 'No current identity mapping.' ); ?></p>
-			<table class="widefat striped"><thead><tr><th>Packet</th><th>Status</th><th>Received (UTC)</th><th>Processed (UTC)</th><th>Error</th></tr></thead><tbody>
-			<?php foreach ( $journey as $row ) : ?><tr><td><?php echo esc_html( $row['packet_id'] ); ?></td><td><?php echo esc_html( $row['status'] ); ?></td><td><?php echo esc_html( $row['received_at'] ); ?></td><td><?php echo esc_html( $row['processed_at'] ?: '—' ); ?></td><td><?php echo esc_html( $row['error_text'] ?: '—' ); ?></td></tr><?php endforeach; ?>
-			</tbody></table>
-		<?php endif; ?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="wfc27_run_inbox">
-			<?php wp_nonce_field( 'wfc27_run_inbox' ); ?>
-			<?php submit_button( 'Process pending packets now', 'secondary', 'submit', false ); ?>
-		</form>
-		<table class="widefat striped"><thead><tr><th>Packet</th><th>Status</th><th>Received (UTC)</th><th>Processed (UTC)</th><th>Error</th></tr></thead><tbody>
+		<table class="widefat striped"><thead><tr><th>ID</th><th>Status</th><th>JSON</th></tr></thead><tbody>
 		<?php foreach ( $rows as $row ) : ?>
-		<tr><td><code><?php echo esc_html( $row['packet_id'] ); ?></code></td><td><?php echo esc_html( $row['status'] ); ?></td><td><?php echo esc_html( $row['received_at'] ); ?></td><td><?php echo esc_html( $row['processed_at'] ?: '—' ); ?></td><td><?php echo esc_html( $row['error_text'] ?: '—' ); ?></td></tr>
+		<tr><td><code><?php echo esc_html( $row['envelope_id'] ); ?></code></td><td><?php echo esc_html( $row['status'] ); ?></td><td><code><?php echo esc_html( wp_html_excerpt( $row['json'], 160, '…' ) ); ?></code></td></tr>
 		<?php endforeach; ?>
 		</tbody></table>
 		<h2>Connection setup</h2>

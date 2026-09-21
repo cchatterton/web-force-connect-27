@@ -1,4 +1,4 @@
 {
-  "version": "0.1.4",
-  "body": "Show recent train trips, including empty packets, with hour and day filters."
+  "version": "0.2.0",
+  "body": "WFC27 now transports opaque JSON between durable stations in Salesforce and WordPress. Content processing is removed."
 }

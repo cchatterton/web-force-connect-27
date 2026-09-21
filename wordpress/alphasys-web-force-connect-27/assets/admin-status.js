@@ -49,12 +49,12 @@
 			tripRows.replaceChildren();
 			if (!result.data.trips.length) {
 				const row = tripRows.insertRow();
-				row.insertCell().colSpan = 4;
+				row.insertCell().colSpan = 3;
 				row.cells[0].textContent = 'No trips in this period.';
 			} else {
 				for (const trip of result.data.trips) {
 					const row = tripRows.insertRow();
-					for (const value of [trip.received_at, trip.packet_id || 'Empty packet', trip.post_count, trip.meta_count]) row.insertCell().textContent = String(value);
+					for (const value of [trip.occurred_at, trip.sent_count, trip.received_count]) row.insertCell().textContent = String(value);
 				}
 			}
 			render();

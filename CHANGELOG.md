@@ -1,33 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
-- Schedule each one-minute Salesforce train as a one-time job and queue the next train when it runs. Salesforce does not accept a wildcard in the cron minute field.
-- Show saved object bindings in a table and allow an object binding to be saved before its eligibility field exists. Active controls whether a ready binding participates in sync; missing eligibility still prevents sync.
-- Reduce Salesforce object-list CPU time by reading EntityDefinition in pages. Poll transport status without reloading the object list.
-- Explain that Salesforce's Field Name input should be `WFC27_Eligible`; Salesforce appends `__c` to produce the required API name.
+WFC27 now transports opaque JSON between durable stations in both directions. It no longer scans Salesforce business objects, applies WordPress posts/meta, or runs retention and eligibility logic. Existing legacy data is preserved. Trip history and the one-minute train remain.
 
-## 0.1.2 - development
+## 0.1.4
 
-- Auto-refresh the WordPress heartbeat and queue counts, with a 60-second train progress bar that resets on each receipt.
-- Auto-refresh the Salesforce transport status and show the same heartbeat progress.
-- Make the Salesforce object picker searchable and keep its options stable while the console updates.
-- Recheck the selected object's eligibility field while Object bindings is open; render the binding form in columns.
-- Add a Salesforce pause/play control that stops and restarts the train schedule, with state sent to WordPress.
-
-## 0.1.3 - development
-
-- Show a Sync Train Arriving countdown widget in WordPress and display the paused state received from Salesforce.
-- Remove the redundant last and next train timestamp rows.
-
-## 0.1.1 - development
-
-- Let WordPress administrators receive trains by default, with an optional selected receiver user.
-- Remove the custom WordPress role and capability requirement.
-- Use the query-style REST route for Salesforce callouts so sites without pretty REST URLs work.
-
-## 0.1.0 - development
-
-- Added Salesforce binding, queue, packet, identity, retention, scheduler, and admin console source.
-- Added WordPress authenticated packet inbox, asynchronous processing, identity mapping, bound-field protection, and transport status page.
-- Defined the asynchronous train and acknowledgement contract.
+Added recent train trips, including empty packets, with time filters.
