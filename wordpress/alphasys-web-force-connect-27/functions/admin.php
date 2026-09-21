@@ -31,6 +31,7 @@ function wfc27_admin_ajax_status() {
 	}
 	global $wpdb;
 	$last = get_option( 'wfc27_last_heartbeat', '' );
+	$waiting = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . wfc27_station_table() . ' WHERE status = %s', 'outbound_ready' ) );
 	$filter = isset( $_POST['trip_filter'] ) ? sanitize_key( wp_unslash( $_POST['trip_filter'] ) ) : 'hour';
 	$day = isset( $_POST['trip_day'] ) ? sanitize_text_field( wp_unslash( $_POST['trip_day'] ) ) : '';
 	$hour = isset( $_POST['trip_hour'] ) ? absint( wp_unslash( $_POST['trip_hour'] ) ) : 0;
@@ -47,6 +48,7 @@ function wfc27_admin_ajax_status() {
 	wp_send_json_success( array(
 		'last' => $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : null,
 		'state' => get_option( 'wfc27_train_state', 'running' ),
+		'waiting' => $waiting,
 		'trips' => $trips,
 	) );
 }
@@ -81,7 +83,9 @@ function wfc27_render_admin_page() {
 		wfc27_render_sync_detail( absint( $_GET['sync'] ) );
 		return;
 	}
+	global $wpdb;
 	$last = get_option( 'wfc27_last_heartbeat', '' );
+	$waiting = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . wfc27_station_table() . ' WHERE status = %s', 'outbound_ready' ) );
 	$receiver_id = (int) get_option( 'wfc27_receiver_user_id', 0 );
 	$credentials_url = $receiver_id ? get_edit_user_link( $receiver_id ) : admin_url( 'profile.php' );
 	?>
@@ -127,6 +131,7 @@ function wfc27_render_admin_page() {
 		</div>
 		</section>
 		</div>
+		<p class="wfc27-station-summary"><a href="<?php echo esc_url( wfc27_station_url() ); ?>">Sync Packets</a> · Packets waiting at WordPress station: <strong id="wfc27-station-waiting"><?php echo esc_html( (string) $waiting ); ?></strong></p>
 		<h2>Recent Sync</h2>
 		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Packets sent</th><th>Packets received</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="3">Loading syncs…</td></tr></tbody></table>
 	</div>

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.6
+- Show the number of packets waiting for first pickup at each station, separate from the train countdown.
+
 ## 0.3.5
 - Remove queue and receipt counters from both train widgets. Recent Sync counts explicitly refer to sealed packets, not contents.
 

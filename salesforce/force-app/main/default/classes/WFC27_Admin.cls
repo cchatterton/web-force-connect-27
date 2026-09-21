@@ -9,9 +9,11 @@ public with sharing class WFC27_Admin {
         List<WFC27_Settings__c> rows = [SELECT Batch_Size__c, Last_Tick_At__c, Last_Error__c, Train_Paused__c
             FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
         WFC27_Settings__c settings = rows.isEmpty() ? null : rows[0];
+        Integer waiting = [SELECT COUNT() FROM WFC27_Station__c WHERE Status__c = 'outbound_ready'];
         List<WFC27_Station__c> station = [SELECT Id, Envelope_ID__c, Status__c, Payload__c, CreatedDate
             FROM WFC27_Station__c ORDER BY CreatedDate DESC LIMIT 50];
         return new Map<String,Object>{
+            'waiting' => waiting,
             'batchSize' => settings == null ? 25 : settings.Batch_Size__c,
             'lastTrain' => settings == null ? null : settings.Last_Tick_At__c,
             'trainPaused' => settings != null && settings.Train_Paused__c,
