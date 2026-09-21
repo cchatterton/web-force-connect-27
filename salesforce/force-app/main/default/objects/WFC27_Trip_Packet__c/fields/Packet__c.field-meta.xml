@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Packet__c</fullName><deleteConstraint>Restrict</deleteConstraint><label>Sync Packet</label><referenceTo>WFC27_Station__c</referenceTo><relationshipLabel>Sync Memberships</relationshipLabel><relationshipName>Sync_Memberships</relationshipName><type>Lookup</type></CustomField>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Packet__c</fullName><deleteConstraint>Restrict</deleteConstraint><label>Sync Packet</label><referenceTo>WFC27_Station__c</referenceTo><relationshipLabel>Recent Syncs</relationshipLabel><relationshipName>Sync_Memberships</relationshipName><type>Lookup</type></CustomField>
