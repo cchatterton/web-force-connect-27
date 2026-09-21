@@ -1,5 +1,7 @@
 # Web Force Connect 27
 
+The [station-first architecture proposal](docs/station-first-architecture.md) describes the planned separation of transport from two new data processing engines. The implementation documented below is the current runtime and has not yet been refactored.
+
 AlphaSys WFC27 is a Salesforce-to-WordPress content transport. Salesforce selects eligible records and sends bound fields; WordPress stages packets, creates or updates posts, and returns identity and processing results on later one-minute trains. Fields that Salesforce sends are protected in WordPress. Excerpt, featured image, AlphaBlocks, rows, and other fields stay local unless explicitly bound.
 
 Version: 0.1.3 development build. The WordPress plugin was activated and smoke-tested locally. Salesforce metadata was deployed to the designated developer org on 2026-09-21 for further testing; this is not a released unmanaged package. The Salesforce minute train uses a one-time scheduled job that schedules its successor. The Salesforce console controls pause and play; WordPress displays the state on its arriving-train widget.
