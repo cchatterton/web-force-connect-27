@@ -9,10 +9,12 @@ public without sharing class WFC27_Engine {
     }
 
     public static WFC27_Settings__c settings() {
-        List<WFC27_Settings__c> rows = [SELECT Id, Name, Batch_Size__c, Last_Tick_At__c, Last_Error__c, Train_Paused__c
+        List<WFC27_Settings__c> rows = [SELECT Id, Name, Batch_Size__c, Last_Tick_At__c, Last_Error__c, Train_Paused__c,
+            Empty_Sync_Retention_Days__c, Packet_Sync_Retention_Days__c, Failed_Sync_Retention_Days__c
             FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
         if (!rows.isEmpty()) return rows[0];
-        WFC27_Settings__c row = new WFC27_Settings__c(Name='Default', Batch_Size__c=25);
+        WFC27_Settings__c row = new WFC27_Settings__c(Name='Default', Batch_Size__c=25,
+            Empty_Sync_Retention_Days__c=7, Packet_Sync_Retention_Days__c=90, Failed_Sync_Retention_Days__c=365);
         insert row;
         return row;
     }

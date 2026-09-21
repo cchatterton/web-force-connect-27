@@ -74,6 +74,11 @@ private class WFC27_TransportTest {
             System.assertEquals(0, WFC27_Admin.status().get('waiting'));
             WFC27_Admin.setBatchSize(10);
             System.assertEquals(10, WFC27_Admin.status().get('batchSize'));
+            WFC27_Admin.setRetention(8, 91, 366);
+            Map<String,Object> retentionStatus = WFC27_Admin.status();
+            System.assertEquals(Decimal.valueOf(8), retentionStatus.get('emptyRetentionDays'));
+            System.assertEquals(Decimal.valueOf(91), retentionStatus.get('packetRetentionDays'));
+            System.assertEquals(Decimal.valueOf(366), retentionStatus.get('failedRetentionDays'));
             System.assertNotEquals(null, WFC27_Admin.stage('{"test":true}'));
             System.assertEquals(1, WFC27_Admin.status().get('waiting'));
             System.assertEquals(0, WFC27_Admin.trips('hour', null, null).size());
@@ -82,5 +87,27 @@ private class WFC27_TransportTest {
             WFC27_Admin.setTrainPaused(true);
             System.assertEquals(true, WFC27_Admin.status().get('trainPaused'));
         }
+    }
+
+    @IsTest static void retentionUsesSyncTypeWindowsAndPreservesPackets() {
+        WFC27_Station__c packet = new WFC27_Station__c(Payload__c='retention packet');
+        insert packet;
+        WFC27_Trip__c oldEmpty = new WFC27_Trip__c(Sent_Count__c=0, Received_Count__c=0, Result__c='Delivered');
+        WFC27_Trip__c recentEmpty = new WFC27_Trip__c(Sent_Count__c=0, Received_Count__c=0, Result__c='Delivered');
+        WFC27_Trip__c oldActive = new WFC27_Trip__c(Sent_Count__c=1, Received_Count__c=0, Result__c='Delivered');
+        WFC27_Trip__c oldFailed = new WFC27_Trip__c(Sent_Count__c=0, Received_Count__c=0, Result__c='Failed');
+        insert new List<WFC27_Trip__c>{oldEmpty, recentEmpty, oldActive, oldFailed};
+        insert new WFC27_Trip_Packet__c(Trip__c=oldActive.Id, Packet__c=packet.Id, Direction__c='Sent');
+        Test.setCreatedDate(oldEmpty.Id, System.now().addDays(-8));
+        Test.setCreatedDate(recentEmpty.Id, System.now().addDays(-6));
+        Test.setCreatedDate(oldActive.Id, System.now().addDays(-91));
+        Test.setCreatedDate(oldFailed.Id, System.now().addDays(-366));
+        Test.startTest();
+        Integer removed = WFC27_Retention.cleanup();
+        Test.stopTest();
+        System.assertEquals(3, removed);
+        System.assertEquals(1, [SELECT COUNT() FROM WFC27_Trip__c]);
+        System.assertEquals(0, [SELECT COUNT() FROM WFC27_Trip_Packet__c]);
+        System.assertEquals(1, [SELECT COUNT() FROM WFC27_Station__c WHERE Id = :packet.Id]);
     }
 }

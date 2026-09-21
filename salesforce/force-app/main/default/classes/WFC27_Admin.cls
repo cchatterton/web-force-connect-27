@@ -6,7 +6,8 @@ public with sharing class WFC27_Admin {
     @AuraEnabled
     public static Map<String,Object> status() {
         requireManage();
-        List<WFC27_Settings__c> rows = [SELECT Batch_Size__c, Last_Tick_At__c, Last_Error__c, Train_Paused__c
+        List<WFC27_Settings__c> rows = [SELECT Batch_Size__c, Last_Tick_At__c, Last_Error__c, Train_Paused__c,
+            Empty_Sync_Retention_Days__c, Packet_Sync_Retention_Days__c, Failed_Sync_Retention_Days__c
             FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
         WFC27_Settings__c settings = rows.isEmpty() ? null : rows[0];
         Integer waiting = [SELECT COUNT() FROM WFC27_Station__c WHERE Status__c = 'outbound_ready'];
@@ -15,7 +16,10 @@ public with sharing class WFC27_Admin {
             'batchSize' => settings == null ? 25 : settings.Batch_Size__c,
             'lastTrain' => settings == null ? null : settings.Last_Tick_At__c,
             'trainPaused' => settings != null && settings.Train_Paused__c,
-            'lastError' => settings == null ? null : settings.Last_Error__c
+            'lastError' => settings == null ? null : settings.Last_Error__c,
+            'emptyRetentionDays' => settings == null || settings.Empty_Sync_Retention_Days__c == null ? 7 : settings.Empty_Sync_Retention_Days__c,
+            'packetRetentionDays' => settings == null || settings.Packet_Sync_Retention_Days__c == null ? 90 : settings.Packet_Sync_Retention_Days__c,
+            'failedRetentionDays' => settings == null || settings.Failed_Sync_Retention_Days__c == null ? 365 : settings.Failed_Sync_Retention_Days__c
         };
     }
 
@@ -46,6 +50,19 @@ public with sharing class WFC27_Admin {
         if (size == null || size < 1 || size > 100) throw new AuraHandledException('Batch size must be from 1 to 100.');
         WFC27_Settings__c row = WFC27_Engine.settings();
         row.Batch_Size__c = size;
+        update row;
+    }
+
+    @AuraEnabled
+    public static void setRetention(Integer emptyDays, Integer packetDays, Integer failedDays) {
+        requireManage();
+        for (Integer days : new List<Integer>{emptyDays, packetDays, failedDays}) {
+            if (days == null || days < 1 || days > 3650) throw new AuraHandledException('Retention must be from 1 to 3650 days.');
+        }
+        WFC27_Settings__c row = WFC27_Engine.settings();
+        row.Empty_Sync_Retention_Days__c = emptyDays;
+        row.Packet_Sync_Retention_Days__c = packetDays;
+        row.Failed_Sync_Retention_Days__c = failedDays;
         update row;
     }
 

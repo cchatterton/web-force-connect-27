@@ -1,4 +1,4 @@
 {
-  "version": "0.3.7",
-  "body": "Restore the waiting packet count inside both train widgets and align their heartbeat styling."
+  "version": "0.3.8",
+  "body": "Add daily sync-log retention: seven days for empty syncs, 90 days for packet-bearing syncs, and 365 days for failed Salesforce syncs."
 }

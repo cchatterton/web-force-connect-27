@@ -3,6 +3,7 @@
     <div class="slds-p-around_medium">
       <template if:true={error}><div class="slds-text-color_error slds-m-bottom_small" role="alert">{error}</div></template>
       <template if:true={status}>
+        <div class="top-widgets">
         <section class="train-widget" aria-label="Salesforce sync train">
           <div class="train-widget-heading">
             <h2 class="slds-text-heading_medium">Sync Train Departing</h2>
@@ -13,9 +14,20 @@
           <div class="heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow={heartbeatPercent}><div class="heartbeat-fill" style={heartbeatStyle}></div></div>
           <p>Packets waiting to send: {status.waiting}</p>
         </section>
+        <section class="settings-widget" aria-label="Train capacity">
+          <h2 class="slds-text-heading_medium">Train capacity</h2>
+          <lightning-input type="number" label="Packets per train" min="1" max="100" value={status.batchSize} onchange={changeBatch}></lightning-input>
+          <lightning-button label="Save capacity" onclick={saveBatch} class="slds-m-top_small"></lightning-button>
+        </section>
+        <section class="settings-widget" aria-label="Sync retention">
+          <h2 class="slds-text-heading_medium">Sync retention</h2>
+          <lightning-input type="number" label="Empty syncs (days)" min="1" max="3650" value={status.emptyRetentionDays} onchange={changeEmptyRetention}></lightning-input>
+          <lightning-input type="number" label="Syncs with packets (days)" min="1" max="3650" value={status.packetRetentionDays} onchange={changePacketRetention}></lightning-input>
+          <lightning-input type="number" label="Failed syncs (days)" min="1" max="3650" value={status.failedRetentionDays} onchange={changeFailedRetention}></lightning-input>
+          <lightning-button label="Save retention" onclick={saveRetention} class="slds-m-top_small"></lightning-button>
+        </section>
+        </div>
         <template if:true={status.lastError}><p class="slds-text-color_error" role="alert">Last transport error: {status.lastError}</p></template>
-        <lightning-input type="number" label="Items per train" min="1" max="100" value={status.batchSize} onchange={changeBatch}></lightning-input>
-        <lightning-button label="Save train capacity" onclick={saveBatch} class="slds-m-top_small"></lightning-button>
         <h2 class="slds-text-heading_small slds-m-top_large">Recent train trips</h2>
         <div class="trip-filters">
           <lightning-combobox label="Show" value={tripPeriod} options={tripPeriods} onchange={changeTripPeriod}></lightning-combobox>

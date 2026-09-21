@@ -7,6 +7,7 @@ public without sharing class WFC27_Scheduler implements Schedulable {
     public static void start() {
         stop();
         scheduleNext();
+        WFC27_Retention.start();
     }
     public static void stop() {
         for (CronTrigger job : [SELECT Id FROM CronTrigger WHERE CronJobDetail.Name LIKE 'WFC27 Train %' AND State = 'WAITING']) System.abortJob(job.Id);

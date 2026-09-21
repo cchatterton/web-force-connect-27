@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Packet_Sync_Retention_Days__c</fullName><defaultValue>90</defaultValue><label>Packet Sync Retention Days</label><precision>4</precision><scale>0</scale><type>Number</type></CustomField>

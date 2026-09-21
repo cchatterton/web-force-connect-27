@@ -2,6 +2,7 @@ import { LightningElement, track } from 'lwc';
 import status from '@salesforce/apex/WFC27_Admin.status';
 import getTrips from '@salesforce/apex/WFC27_Admin.trips';
 import setBatchSize from '@salesforce/apex/WFC27_Admin.setBatchSize';
+import setRetention from '@salesforce/apex/WFC27_Admin.setRetention';
 import setTrainPaused from '@salesforce/apex/WFC27_Admin.setTrainPaused';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -10,6 +11,9 @@ export default class Wfc27Console extends LightningElement {
   @track trips = [];
   error;
   batchSize;
+  emptyRetentionDays;
+  packetRetentionDays;
+  failedRetentionDays;
   heartbeatTimer;
   progressTimer;
   heartbeatPercent = 0;
@@ -61,9 +65,23 @@ export default class Wfc27Console extends LightningElement {
   changeTripDay(event) { this.tripDay = event.detail.value; this.refresh(); }
   changeTripHour(event) { this.tripHour = event.detail.value; this.refresh(); }
   changeBatch(event) { this.batchSize = event.detail.value; }
+  changeEmptyRetention(event) { this.emptyRetentionDays = event.detail.value; }
+  changePacketRetention(event) { this.packetRetentionDays = event.detail.value; }
+  changeFailedRetention(event) { this.failedRetentionDays = event.detail.value; }
   async saveBatch() {
     try { await setBatchSize({ size: Number(this.batchSize) }); await this.refresh(); this.dispatchEvent(new ShowToastEvent({ title: 'Train capacity saved', variant: 'success' })); }
     catch (error) { this.error = error.body?.message || error.message; }
+  }
+  async saveRetention() {
+    try {
+      await setRetention({
+        emptyDays: Number(this.emptyRetentionDays ?? this.status.emptyRetentionDays),
+        packetDays: Number(this.packetRetentionDays ?? this.status.packetRetentionDays),
+        failedDays: Number(this.failedRetentionDays ?? this.status.failedRetentionDays)
+      });
+      await this.refresh();
+      this.dispatchEvent(new ShowToastEvent({ title: 'Retention settings saved', variant: 'success' }));
+    } catch (error) { this.error = error.body?.message || error.message; }
   }
   async toggleTrain() {
     try {

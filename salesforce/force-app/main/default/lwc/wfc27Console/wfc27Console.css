@@ -1,12 +1,15 @@
 .train-widget {
   box-sizing: border-box;
-  max-width: 28rem;
   padding: 1rem;
   border: 1px solid #c3c4c7;
   border-radius: 0.5rem;
   background: #f9fafb;
-  margin-bottom: 1rem;
+  margin: 0;
 }
+
+.top-widgets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: stretch; margin-bottom: 1rem; }
+.settings-widget { box-sizing: border-box; min-width: 0; padding: 1rem; border: 1px solid #c3c4c7; border-radius: 0.5rem; background: #fff; }
+.settings-widget h2 { margin: 0 0 0.75rem; font-weight: 600; }
 
 .train-widget-heading {
   display: flex;
@@ -80,5 +83,6 @@
 }
 
 @media (max-width: 800px) {
+  .top-widgets { grid-template-columns: 1fr; }
   .binding-form-grid { grid-template-columns: 1fr; }
 }

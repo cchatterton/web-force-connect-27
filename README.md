@@ -10,6 +10,8 @@ Administrators use the native Salesforce **Sync Packets** object or the WordPres
 
 Transport statuses are `outbound_ready`, `outbound_pending` (WordPress while awaiting a receipt), `outbound_delivered`, `inbound_received`, and `inbound_acked`. An engine can later place outbound text into the local station and claim inbound text. WFC27 never updates posts or Salesforce business objects. A train records transport receipt; it is not a claim that a future engine processed the payload.
 
+Sync history is cleaned daily. Empty successful syncs are retained for 7 days, syncs containing packets for 90 days, and failed Salesforce syncs for 365 days. Cleanup removes sync records and their relationship rows only; station packets are retained.
+
 Salesforce schedules an authenticated HTTP exchange at a one-minute target interval. Its request contains up to the configured capacity of outbound envelopes and receipts for previously received WordPress envelopes. WordPress stores received envelopes before responding with their IDs, and includes its own outbound envelopes in that response. Salesforce stores those before acknowledging them on a later train. An empty train carries no envelope and still appears in both trip histories. Existing identity, binding, packet, and queue data from earlier versions are preserved but no longer read by WFC27.
 
 The on-wire protocol is `wfc27.station.v2`:

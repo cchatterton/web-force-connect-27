@@ -9,6 +9,7 @@ function wfc27_register_admin_page() {
 }
 
 add_action( 'admin_post_wfc27_save_receiver', 'wfc27_admin_save_receiver' );
+add_action( 'admin_post_wfc27_save_retention', 'wfc27_admin_save_retention' );
 add_action( 'admin_post_wfc27_stage_json', 'wfc27_admin_stage_json' );
 add_action( 'wp_ajax_wfc27_status', 'wfc27_admin_ajax_status' );
 add_action( 'admin_enqueue_scripts', 'wfc27_admin_enqueue_status' );
@@ -65,6 +66,21 @@ function wfc27_admin_save_receiver() {
 	wp_safe_redirect( admin_url( 'admin.php?page=wfc27&receiver_saved=1' ) );
 	exit;
 }
+function wfc27_admin_save_retention() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'Insufficient permissions.' );
+	}
+	check_admin_referer( 'wfc27_save_retention' );
+	$empty_days = isset( $_POST['empty_retention_days'] ) ? absint( wp_unslash( $_POST['empty_retention_days'] ) ) : 7;
+	$packet_days = isset( $_POST['packet_retention_days'] ) ? absint( wp_unslash( $_POST['packet_retention_days'] ) ) : 90;
+	if ( $empty_days < 1 || $empty_days > 3650 || $packet_days < 1 || $packet_days > 3650 ) {
+		wp_die( 'Retention must be from 1 to 3650 days.' );
+	}
+	update_option( 'wfc27_empty_retention_days', $empty_days, false );
+	update_option( 'wfc27_packet_retention_days', $packet_days, false );
+	wp_safe_redirect( admin_url( 'admin.php?page=wfc27&retention_saved=1' ) );
+	exit;
+}
 function wfc27_admin_stage_json() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( 'Insufficient permissions.' );
@@ -88,6 +104,8 @@ function wfc27_render_admin_page() {
 	$waiting = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . wfc27_station_table() . ' WHERE status = %s', 'outbound_ready' ) );
 	$receiver_id = (int) get_option( 'wfc27_receiver_user_id', 0 );
 	$credentials_url = $receiver_id ? get_edit_user_link( $receiver_id ) : admin_url( 'profile.php' );
+	$empty_retention_days = (int) get_option( 'wfc27_empty_retention_days', 7 );
+	$packet_retention_days = (int) get_option( 'wfc27_packet_retention_days', 90 );
 	?>
 	<div class="wrap">
 		<h1>Web Force Connect 27</h1>
@@ -130,6 +148,18 @@ function wfc27_render_admin_page() {
 			<label>Date <input id="wfc27-trip-day" type="date" value="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>"></label>
 			<label>Hour <select id="wfc27-trip-hour"><?php for ( $hour = 0; $hour < 24; $hour++ ) : ?><option value="<?php echo esc_attr( (string) $hour ); ?>"><?php echo esc_html( sprintf( '%02d:00', $hour ) ); ?></option><?php endfor; ?></select></label>
 		</div>
+		</section>
+		<section class="wfc27-retention-widget" aria-label="Sync retention">
+		<h2>Sync retention</h2>
+		<p>Daily cleanup removes sync history and keeps the packets.</p>
+		<?php if ( isset( $_GET['retention_saved'] ) ) : ?><div class="notice notice-success inline"><p>Retention settings saved.</p></div><?php endif; ?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="wfc27_save_retention">
+			<?php wp_nonce_field( 'wfc27_save_retention' ); ?>
+			<label>Empty syncs (days)<input type="number" name="empty_retention_days" min="1" max="3650" value="<?php echo esc_attr( (string) $empty_retention_days ); ?>"></label>
+			<label>Syncs with packets (days)<input type="number" name="packet_retention_days" min="1" max="3650" value="<?php echo esc_attr( (string) $packet_retention_days ); ?>"></label>
+			<?php submit_button( 'Save retention', 'secondary', 'submit', false ); ?>
+		</form>
 		</section>
 		</div>
 		<h2>Recent Sync</h2>

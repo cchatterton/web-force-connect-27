@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.8
+- Purge empty successful sync logs after 7 days and packet-bearing sync logs after 90 days on both platforms.
+- Retain failed Salesforce sync logs for 365 days.
+- Preserve station packets when their sync history expires.
+
 ## Salesforce native sync records
 - Add a native WFC27 Recent Sync tab and record layout.
 - Add child WFC27 Sync Packet memberships so a sync record links to every sent and received station packet.
