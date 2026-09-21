@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+- WordPress dashboard uses four cells for the train, receive endpoint, integration user, and sync filters.
+- Standalone station list is named Sync Packets; the duplicate station block was removed from the dashboard.
+- Recent Sync rows open a detail view showing the packets sent and received on new trips.
+
 ## 0.3.0
 - Train envelopes now carry opaque text payloads, including JSON, plain text, and arbitrary text.
 - Salesforce Station Items now have an object tab, page layout, and direct record defaults for the train.

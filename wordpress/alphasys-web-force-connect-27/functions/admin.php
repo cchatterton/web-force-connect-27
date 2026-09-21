@@ -20,6 +20,7 @@ function wfc27_admin_enqueue_status( $hook ) {
 	wp_enqueue_script( 'wfc27-admin-status', plugins_url( 'assets/admin-status.js', WFC27_FILE ), array(), WFC27_VERSION, true );
 	wp_localize_script( 'wfc27-admin-status', 'wfc27Status', array(
 		'url' => admin_url( 'admin-ajax.php' ),
+		'syncUrl' => admin_url( 'admin.php?page=wfc27&sync=' ),
 		'nonce' => wp_create_nonce( 'wfc27_status' ),
 	) );
 }
@@ -85,12 +86,15 @@ function wfc27_admin_stage_json() {
 	exit;
 }
 function wfc27_render_admin_page() {
+	if ( isset( $_GET['sync'] ) ) {
+		wfc27_render_sync_detail( absint( $_GET['sync'] ) );
+		return;
+	}
 	global $wpdb;
 	$station = wfc27_station_table();
 	$counts = $wpdb->get_results( "SELECT status, COUNT(*) AS total FROM {$station} GROUP BY status", ARRAY_A );
 	$waiting = 0;
 	foreach ( $counts as $count ) { if ( 'outbound_ready' === $count['status'] ) { $waiting = (int) $count['total']; } }
-	$rows = $wpdb->get_results( "SELECT envelope_id,status,json FROM {$station} ORDER BY envelope_id DESC LIMIT 50", ARRAY_A );
 	$last = get_option( 'wfc27_last_heartbeat', '' );
 	$receiver_id = (int) get_option( 'wfc27_receiver_user_id', 0 );
 	$credentials_url = $receiver_id ? get_edit_user_link( $receiver_id ) : admin_url( 'profile.php' );
@@ -106,51 +110,59 @@ function wfc27_render_admin_page() {
 			<div class="wfc27-heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-state="<?php echo esc_attr( get_option( 'wfc27_train_state', 'running' ) ); ?>" data-last="<?php echo esc_attr( $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : '' ); ?>"><div class="wfc27-heartbeat-fill"></div></div>
 			<p id="wfc27-waiting-count">Items waiting to send: <?php echo esc_html( (string) $waiting ); ?></p>
 		</section>
-		<section class="wfc27-connection-widget" aria-label="Connection setup">
-			<h2>Connection setup</h2>
-			<p>Choose the WordPress user that receives trains. Create an Application Password in that user's profile and store it in Salesforce's Named Credential.</p>
-			<p><strong>Receive endpoint</strong><br><code class="wfc27-endpoint"><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></p>
+		<section class="wfc27-endpoint-widget" aria-label="Receive endpoint">
+			<h2>Receive endpoint</h2>
+			<p>Copy this WordPress address into the Salesforce Named Credential.</p>
+			<code class="wfc27-endpoint"><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code>
+		</section>
+		<section class="wfc27-integration-widget" aria-label="Integration user">
+			<h2>Integration user</h2>
+			<p>Choose the WordPress user authorized to receive syncs. Create an Application Password in that user's profile.</p>
 			<?php if ( isset( $_GET['receiver_saved'] ) ) : ?><div class="notice notice-success"><p>Train receiver saved.</p></div><?php endif; ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="wfc27_save_receiver">
 				<?php wp_nonce_field( 'wfc27_save_receiver' ); ?>
-				<label for="wfc27-receiver-user">WordPress train receiver</label>
+				<label for="wfc27-receiver-user">Integration user</label>
 				<select id="wfc27-receiver-user" name="receiver_user_id">
-					<option value="0">Administrators only (default)</option>
+					<option value="0">Administrators (default)</option>
 					<?php foreach ( get_users( array( 'orderby' => 'display_name' ) ) as $user ) : ?>
 						<option value="<?php echo esc_attr( (string) $user->ID ); ?>" <?php selected( $receiver_id, (int) $user->ID ); ?>><?php echo esc_html( $user->display_name . ' (' . $user->user_login . ')' ); ?></option>
 					<?php endforeach; ?>
 				</select>
-				<?php submit_button( 'Save receiver', 'secondary', 'submit', false ); ?>
+				<?php submit_button( 'Save integration user', 'secondary', 'submit', false ); ?>
 			</form>
 			<p><a href="<?php echo esc_url( $credentials_url . '#application-passwords-section' ); ?>">Open Application Password settings ↗</a></p>
 		</section>
-		</div>
-		<section class="wfc27-trip-filter-widget" aria-label="Trip filters">
-		<h2>Trip filters</h2>
+		<section class="wfc27-trip-filter-widget" aria-label="Sync filters">
+		<h2>Sync filters</h2>
 		<div class="wfc27-trip-filters">
 			<label>Show <select id="wfc27-trip-filter"><option value="hour">Last hour</option><option value="day">Last 24 hours</option><option value="date">Day (UTC)</option><option value="date_hour">Hour in day (UTC)</option></select></label>
 			<label>Date <input id="wfc27-trip-day" type="date" value="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>"></label>
 			<label>Hour <select id="wfc27-trip-hour"><?php for ( $hour = 0; $hour < 24; $hour++ ) : ?><option value="<?php echo esc_attr( (string) $hour ); ?>"><?php echo esc_html( sprintf( '%02d:00', $hour ) ); ?></option><?php endfor; ?></select></label>
 		</div>
 		</section>
-		<h2>Recent train trips</h2>
-		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Sent</th><th>Received</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="3">Loading trips…</td></tr></tbody></table>
-		<h2>Station</h2>
-		<p><a class="button" href="<?php echo esc_url( wfc27_station_url() ); ?>">Open Station Items</a></p>
-		<?php if ( isset( $_GET['staged'] ) ) : ?><div class="notice notice-success"><p>Payload staged for the next train.</p></div><?php endif; ?>
-		<p id="wfc27-queue-counts"><?php foreach ( $counts as $count ) { echo esc_html( ucfirst( $count['status'] ) . ': ' . $count['total'] ) . ' &nbsp; '; } ?></p>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="wfc27_stage_json">
-			<?php wp_nonce_field( 'wfc27_stage_json' ); ?>
-			<label for="wfc27-station-json">Stage outbound payload for a train test</label><br>
-			<textarea id="wfc27-station-json" name="station_json" rows="4" cols="80"></textarea><br>
-			<?php submit_button( 'Stage payload', 'secondary', 'submit', false ); ?>
-		</form>
-		<table class="widefat striped"><thead><tr><th>ID</th><th>Status</th><th>Payload</th></tr></thead><tbody>
-		<?php foreach ( $rows as $row ) : ?>
-		<tr><td><code><?php echo esc_html( $row['envelope_id'] ); ?></code></td><td><?php echo esc_html( $row['status'] ); ?></td><td><code><?php echo esc_html( wp_html_excerpt( $row['json'], 160, '…' ) ); ?></code></td></tr>
-		<?php endforeach; ?>
+		</div>
+		<h2>Recent Sync</h2>
+		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Sent</th><th>Received</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="3">Loading syncs…</td></tr></tbody></table>
+	</div>
+	<?php
+}
+
+function wfc27_render_sync_detail( $id ) {
+	global $wpdb;
+	$trip = $wpdb->get_row( $wpdb->prepare( 'SELECT id,sent_count,received_count,occurred_at FROM ' . wfc27_trips_table() . ' WHERE id = %d', $id ), ARRAY_A );
+	if ( ! $trip ) {
+		wp_die( 'Sync not found.' );
+	}
+	$packets = $wpdb->get_results( $wpdb->prepare( 'SELECT envelope_id,direction FROM ' . wfc27_trip_packets_table() . ' WHERE trip_id = %d ORDER BY id ASC', $id ), ARRAY_A );
+	?>
+	<div class="wrap"><h1>Sync #<?php echo esc_html( (string) $id ); ?></h1>
+		<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=wfc27' ) ); ?>">← Recent Sync</a></p>
+		<p><strong>Arrived (UTC):</strong> <?php echo esc_html( $trip['occurred_at'] ); ?> · <strong>Sent:</strong> <?php echo esc_html( $trip['sent_count'] ); ?> · <strong>Received:</strong> <?php echo esc_html( $trip['received_count'] ); ?></p>
+		<h2>Sync Packets</h2>
+		<table class="widefat striped"><thead><tr><th>Direction</th><th>Packet</th></tr></thead><tbody>
+		<?php foreach ( $packets as $packet ) : ?><tr><td><?php echo esc_html( ucfirst( $packet['direction'] ) ); ?></td><td><a href="<?php echo esc_url( wfc27_station_url( $packet['envelope_id'] ) ); ?>"><code><?php echo esc_html( $packet['envelope_id'] ); ?></code></a></td></tr><?php endforeach; ?>
+		<?php if ( ! $packets ) : ?><tr><td colspan="2"><?php echo ( (int) $trip['sent_count'] + (int) $trip['received_count'] ) > 0 ? 'Packet membership was not recorded for this historical sync.' : 'This sync had no packets.'; ?></td></tr><?php endif; ?>
 		</tbody></table>
 	</div>
 	<?php

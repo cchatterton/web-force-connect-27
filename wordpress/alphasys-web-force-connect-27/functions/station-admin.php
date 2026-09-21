@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 add_action( 'admin_menu', 'wfc27_register_station_page' );
 function wfc27_register_station_page() {
-	add_submenu_page( 'wfc27', 'Station Items', 'Station Items', 'manage_options', 'wfc27-station', 'wfc27_render_station_page' );
+	add_submenu_page( 'wfc27', 'Sync Packets', 'Sync Packets', 'manage_options', 'wfc27-station', 'wfc27_render_station_page' );
 }
 
 add_action( 'admin_post_wfc27_save_station_item', 'wfc27_save_station_item' );
@@ -93,7 +93,7 @@ function wfc27_render_station_list() {
 	$all = array_sum( array_map( static function ( $row ) { return (int) $row['total']; }, $counts ) );
 	?>
 	<div class="wrap">
-		<h1 class="wp-heading-inline">Station Items</h1>
+		<h1 class="wp-heading-inline">Sync Packets</h1>
 		<a href="<?php echo esc_url( wfc27_station_url( 'new' ) ); ?>" class="page-title-action">Add New</a>
 		<hr class="wp-header-end">
 		<ul class="subsubsub">
@@ -102,9 +102,9 @@ function wfc27_render_station_list() {
 			<li> | <a href="<?php echo esc_url( add_query_arg( 'status', $count['status'], wfc27_station_url() ) ); ?>" <?php echo $status === $count['status'] ? 'class="current"' : ''; ?>><?php echo esc_html( str_replace( '_', ' ', ucfirst( $count['status'] ) ) ); ?> <span class="count">(<?php echo esc_html( $count['total'] ); ?>)</span></a></li>
 			<?php endforeach; ?>
 		</ul>
-		<form method="get"><input type="hidden" name="page" value="wfc27-station"><input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="Search envelope ID"><?php submit_button( 'Search Station Items', '', '', false ); ?></form>
+		<form method="get"><input type="hidden" name="page" value="wfc27-station"><input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="Search envelope ID"><?php submit_button( 'Search Sync Packets', '', '', false ); ?></form>
 		<table class="wp-list-table widefat fixed striped table-view-list"><thead><tr><th>Envelope ID</th><th>Status</th><th>Payload preview</th></tr></thead><tbody>
-		<?php if ( ! $items ) : ?><tr><td colspan="3">No station items found.</td></tr><?php endif; ?>
+		<?php if ( ! $items ) : ?><tr><td colspan="3">No sync packets found.</td></tr><?php endif; ?>
 		<?php foreach ( $items as $item ) : ?>
 			<tr><td><strong><a class="row-title" href="<?php echo esc_url( wfc27_station_url( $item['envelope_id'] ) ); ?>"><?php echo esc_html( $item['envelope_id'] ); ?></a></strong><div class="row-actions"><span class="edit"><a href="<?php echo esc_url( wfc27_station_url( $item['envelope_id'] ) ); ?>">View details</a></span></div></td><td><?php echo esc_html( $item['status'] ); ?></td><td><code><?php echo esc_html( wp_html_excerpt( $item['json'], 120, '…' ) ); ?></code></td></tr>
 		<?php endforeach; ?>
@@ -119,7 +119,7 @@ function wfc27_render_station_item( $id ) {
 	$new = 'new' === $id;
 	$item = $new ? null : $wpdb->get_row( $wpdb->prepare( 'SELECT envelope_id,status,json FROM ' . wfc27_station_table() . ' WHERE envelope_id = %s', $id ), ARRAY_A );
 	if ( ! $new && ! $item ) {
-		wp_die( 'Station item not found.' );
+		wp_die( 'Sync packet not found.' );
 	}
 	$editable = $new || 'outbound_ready' === $item['status'];
 	$raw = $new ? '' : $item['json'];
@@ -128,9 +128,9 @@ function wfc27_render_station_item( $id ) {
 	$pretty = $is_json ? wp_json_encode( $payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) : $raw;
 	?>
 	<div class="wrap">
-		<h1><?php echo $new ? 'Add Station Item' : 'Station Item'; ?></h1>
-		<p><a href="<?php echo esc_url( wfc27_station_url() ); ?>">← All Station Items</a></p>
-		<?php if ( isset( $_GET['saved'] ) ) : ?><div class="notice notice-success"><p>Station item saved.</p></div><?php endif; ?>
+		<h1><?php echo $new ? 'Add Sync Packet' : 'Sync Packet'; ?></h1>
+		<p><a href="<?php echo esc_url( wfc27_station_url() ); ?>">← All Sync Packets</a></p>
+		<?php if ( isset( $_GET['saved'] ) ) : ?><div class="notice notice-success"><p>Sync packet saved.</p></div><?php endif; ?>
 		<?php if ( ! $new ) : ?><table class="form-table"><tr><th>Envelope ID</th><td><code><?php echo esc_html( $item['envelope_id'] ); ?></code></td></tr><tr><th>Status</th><td><?php echo esc_html( $item['status'] ); ?></td></tr></table><?php endif; ?>
 		<h2>Payload</h2>
 		<?php if ( $editable ) : ?>
@@ -139,7 +139,7 @@ function wfc27_render_station_item( $id ) {
 				<input type="hidden" name="action" value="wfc27_save_station_item"><input type="hidden" name="station_id" value="<?php echo esc_attr( $new ? '' : $id ); ?>">
 				<?php wp_nonce_field( 'wfc27_save_station_item' ); ?>
 				<textarea name="station_json" rows="16" class="large-text code" aria-label="Payload"><?php echo esc_textarea( $raw ); ?></textarea>
-				<?php submit_button( $new ? 'Add Station Item' : 'Save payload' ); ?>
+				<?php submit_button( $new ? 'Add Sync Packet' : 'Save payload' ); ?>
 			</form>
 		<?php else : ?>
 			<p>This item has left the outbound queue or arrived from Salesforce, so its transport payload is read-only.</p>

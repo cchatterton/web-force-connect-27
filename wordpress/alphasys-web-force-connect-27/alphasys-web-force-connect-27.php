@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AlphaSys Web Force Connect 27
  * Description: Moves opaque text between durable Salesforce and WordPress stations.
- * Version: 0.3.0
+ * Version: 0.3.1
  * Author: AlphaSys
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WFC27_VERSION', '0.3.0' );
+define( 'WFC27_VERSION', '0.3.1' );
 define( 'WFC27_FILE', __FILE__ );
 define( 'WFC27_DIR', plugin_dir_path( __FILE__ ) );
 

@@ -4,7 +4,6 @@
 	const fill = bar.querySelector('.wfc27-heartbeat-fill');
 	const label = document.getElementById('wfc27-heartbeat-label');
 	const countdown = document.getElementById('wfc27-train-countdown');
-	const counts = document.getElementById('wfc27-queue-counts');
 	const waiting = document.getElementById('wfc27-waiting-count');
 	const tripRows = document.getElementById('wfc27-trip-rows');
 	const tripFilter = document.getElementById('wfc27-trip-filter');
@@ -46,17 +45,20 @@
 			if (!result.success) return;
 			last = result.data.last ? Date.parse(result.data.last) : NaN;
 			state = result.data.state;
-			counts.textContent = result.data.counts;
 			waiting.textContent = `Items waiting to send: ${result.data.waiting}`;
 			tripRows.replaceChildren();
 			if (!result.data.trips.length) {
 				const row = tripRows.insertRow();
 				row.insertCell().colSpan = 3;
-				row.cells[0].textContent = 'No trips in this period.';
+				row.cells[0].textContent = 'No syncs in this period.';
 			} else {
 				for (const trip of result.data.trips) {
 					const row = tripRows.insertRow();
-					for (const value of [trip.occurred_at, trip.sent_count, trip.received_count]) row.insertCell().textContent = String(value);
+					const link = document.createElement('a');
+					link.href = `${wfc27Status.syncUrl}${encodeURIComponent(trip.id)}`;
+					link.textContent = trip.occurred_at;
+					row.insertCell().appendChild(link);
+					for (const value of [trip.sent_count, trip.received_count]) row.insertCell().textContent = String(value);
 				}
 			}
 			render();

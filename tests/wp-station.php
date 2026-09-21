@@ -23,8 +23,13 @@ try {
 	if ( $first['receipts'] !== array( $source_id ) || $first['envelopes'][0]['id'] !== $outbound || $first['envelopes'][0]['payload'] !== 'plain text from WordPress' ) {
 		throw new RuntimeException( 'First train did not exchange envelopes.' );
 	}
-	$train( array( array( 'id' => $source_id, 'payload' => 'not JSON from Salesforce' ) ), array( $outbound ) );
 	global $wpdb;
+	$trip_id = (int) $wpdb->get_var( 'SELECT MAX(id) FROM ' . wfc27_trips_table() );
+	$members = $wpdb->get_results( $wpdb->prepare( 'SELECT envelope_id,direction FROM ' . wfc27_trip_packets_table() . ' WHERE trip_id = %d ORDER BY direction', $trip_id ), ARRAY_A );
+	if ( count( $members ) !== 2 || $members[0]['envelope_id'] !== 'sf:' . $source_id || $members[0]['direction'] !== 'received' || $members[1]['envelope_id'] !== $outbound || $members[1]['direction'] !== 'sent' ) {
+		throw new RuntimeException( 'Sync does not list its sent and received packets.' );
+	}
+	$train( array( array( 'id' => $source_id, 'payload' => 'not JSON from Salesforce' ) ), array( $outbound ) );
 	$station = wfc27_station_table();
 	$inbound_count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$station} WHERE envelope_id = %s", 'sf:' . $source_id ) );
 	$outbound_status = $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$station} WHERE envelope_id = %s", $outbound ) );

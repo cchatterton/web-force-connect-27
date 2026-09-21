@@ -1,4 +1,4 @@
 {
-  "version": "0.3.0",
-  "body": "Carry raw text in both directions and add Station Items administration and dashboard widgets."
+  "version": "0.3.1",
+  "body": "Add four dashboard widgets and link Recent Sync rows to their Sync Packets."
 }

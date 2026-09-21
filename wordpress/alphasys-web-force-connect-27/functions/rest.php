@@ -69,5 +69,14 @@ function wfc27_receive_train( WP_REST_Request $request ) {
 	$wpdb->insert( wfc27_trips_table(), array(
 		'sent_count' => count( $envelopes ), 'received_count' => count( $received ), 'occurred_at' => current_time( 'mysql', true ),
 	), array( '%d', '%d', '%s' ) );
+	$trip_id = (int) $wpdb->insert_id;
+	if ( $trip_id ) {
+		foreach ( $incoming as $item ) {
+			$wpdb->insert( wfc27_trip_packets_table(), array( 'trip_id' => $trip_id, 'envelope_id' => $item['id'], 'direction' => 'received' ), array( '%d', '%s', '%s' ) );
+		}
+		foreach ( $envelopes as $item ) {
+			$wpdb->insert( wfc27_trip_packets_table(), array( 'trip_id' => $trip_id, 'envelope_id' => $item['id'], 'direction' => 'sent' ), array( '%d', '%s', '%s' ) );
+		}
+	}
 	return rest_ensure_response( array( 'protocol' => 'wfc27.station.v2', 'receipts' => $received, 'envelopes' => $envelopes ) );
 }

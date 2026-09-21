@@ -13,6 +13,11 @@ function wfc27_trips_table() {
 	return $wpdb->prefix . 'wfc27_trips_v2';
 }
 
+function wfc27_trip_packets_table() {
+	global $wpdb;
+	return $wpdb->prefix . 'wfc27_trip_packets';
+}
+
 function wfc27_stage_outbound( $json ) {
 	global $wpdb;
 	$payload = is_string( $json ) ? $json : (string) $json;
@@ -30,6 +35,7 @@ function wfc27_create_tables() {
 	$charset = $wpdb->get_charset_collate();
 	$station = wfc27_station_table();
 	$trips = wfc27_trips_table();
+	$trip_packets = wfc27_trip_packets_table();
 	dbDelta( "CREATE TABLE {$station} (
 		envelope_id varchar(100) NOT NULL,
 		json longtext NOT NULL,
@@ -44,5 +50,13 @@ function wfc27_create_tables() {
 		occurred_at datetime NOT NULL,
 		PRIMARY KEY  (id),
 		KEY occurred_at (occurred_at)
+	) {$charset};" );
+	dbDelta( "CREATE TABLE {$trip_packets} (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		trip_id bigint(20) unsigned NOT NULL,
+		envelope_id varchar(100) NOT NULL,
+		direction varchar(10) NOT NULL,
+		PRIMARY KEY  (id),
+		KEY trip_id (trip_id)
 	) {$charset};" );
 }
