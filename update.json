@@ -1,4 +1,4 @@
 {
-  "version": "0.1.2",
-  "body": "Refresh the WordPress train heartbeat and queue counts automatically, with a 60-second progress bar that resets when a train arrives."
+  "version": "0.1.3",
+  "body": "Show the Sync Train Arriving countdown widget and the paused state sent by Salesforce."
 }

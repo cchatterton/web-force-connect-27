@@ -3,14 +3,22 @@
 	if (!bar || typeof wfc27Status === 'undefined') return;
 	const fill = bar.querySelector('.wfc27-heartbeat-fill');
 	const label = document.getElementById('wfc27-heartbeat-label');
-	const lastCell = document.getElementById('wfc27-last-train');
-	const nextCell = document.getElementById('wfc27-next-train');
+	const countdown = document.getElementById('wfc27-train-countdown');
 	const counts = document.getElementById('wfc27-queue-counts');
 	let last = bar.dataset.last ? Date.parse(bar.dataset.last) : NaN;
+	let state = bar.dataset.state;
 
 	function render() {
+		if (state === 'paused') {
+			fill.style.width = '0%';
+			countdown.textContent = '—';
+			label.textContent = 'Paused in Salesforce';
+			bar.setAttribute('aria-valuenow', '0');
+			return;
+		}
 		if (!Number.isFinite(last)) {
 			fill.style.width = '0%';
+			countdown.textContent = '01:00';
 			label.textContent = 'Waiting for first train';
 			bar.setAttribute('aria-valuenow', '0');
 			return;
@@ -19,7 +27,9 @@
 		const percent = Math.min(100, Math.floor(elapsed / 600));
 		fill.style.width = `${percent}%`;
 		bar.setAttribute('aria-valuenow', String(percent));
-		label.textContent = elapsed >= 60000 ? 'Next train is due' : `Next train in about ${Math.ceil((60000 - elapsed) / 1000)} seconds`;
+		const seconds = Math.max(0, Math.ceil((60000 - elapsed) / 1000));
+		countdown.textContent = seconds === 60 ? '01:00' : `00:${String(seconds).padStart(2, '0')}`;
+		label.textContent = elapsed >= 60000 ? 'Train due' : 'Running';
 	}
 
 	async function refresh() {
@@ -30,10 +40,7 @@
 			const result = await response.json();
 			if (!result.success) return;
 			last = result.data.last ? Date.parse(result.data.last) : NaN;
-			if (Number.isFinite(last)) {
-				lastCell.textContent = `${new Date(last).toISOString().slice(0, 19).replace('T', ' ')} UTC`;
-				nextCell.textContent = `${new Date(last + 60000).toISOString().slice(0, 19).replace('T', ' ')} UTC`;
-			}
+			state = result.data.state;
 			counts.textContent = result.data.counts;
 			render();
 		} catch (_) { /* Keep the last known heartbeat visible. */ }

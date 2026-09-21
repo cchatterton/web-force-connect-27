@@ -37,6 +37,7 @@ function wfc27_admin_ajax_status() {
 	}
 	wp_send_json_success( array(
 		'last' => $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : null,
+		'state' => get_option( 'wfc27_train_state', 'running' ),
 		'counts' => implode( ' · ', $parts ),
 	) );
 }
@@ -83,12 +84,14 @@ function wfc27_render_admin_page() {
 	<div class="wrap">
 		<h1>Web Force Connect 27</h1>
 		<p>Salesforce packets are received here, then applied to this site's posts and postmeta.</p>
-		<div class="wfc27-heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-last="<?php echo esc_attr( $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : '' ); ?>"><div class="wfc27-heartbeat-fill"></div></div>
-		<p id="wfc27-heartbeat-label" aria-live="polite">Waiting for train status</p>
+		<section class="wfc27-train-widget" aria-label="WordPress sync train">
+			<h2>Sync Train Arriving</h2>
+			<div id="wfc27-train-countdown" class="wfc27-train-countdown" aria-live="off">01:00</div>
+			<p id="wfc27-heartbeat-label" aria-live="polite">Waiting for train status</p>
+			<div class="wfc27-heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-state="<?php echo esc_attr( get_option( 'wfc27_train_state', 'running' ) ); ?>" data-last="<?php echo esc_attr( $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : '' ); ?>"><div class="wfc27-heartbeat-fill"></div></div>
+		</section>
 		<table class="widefat striped"><tbody>
 		<tr><th>Receive endpoint</th><td><code><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></td></tr>
-		<tr><th>Last train received</th><td id="wfc27-last-train"><?php echo esc_html( $last ? $last . ' UTC' : 'Never' ); ?></td></tr>
-		<tr><th>Next train expected</th><td id="wfc27-next-train"><?php echo esc_html( $last ? gmdate( 'Y-m-d H:i:s', strtotime( $last . ' UTC' ) + 60 ) . ' UTC' : 'After Salesforce is connected' ); ?></td></tr>
 		<tr><th>Mapped posts</th><td><?php echo esc_html( (string) $mapped ); ?></td></tr>
 		<tr><th>Average processing wait, last 24 hours</th><td><?php echo esc_html( null === $average ? 'No completed packets' : round( (float) $average ) . ' seconds' ); ?></td></tr>
 		</tbody></table>

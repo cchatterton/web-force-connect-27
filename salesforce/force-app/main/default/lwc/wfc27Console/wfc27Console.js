@@ -5,7 +5,7 @@ import status from '@salesforce/apex/WFC27_Admin.status';
 import saveObject from '@salesforce/apex/WFC27_Admin.saveObject';
 import saveField from '@salesforce/apex/WFC27_Admin.saveField';
 import setBatchSize from '@salesforce/apex/WFC27_Admin.setBatchSize';
-import startSchedules from '@salesforce/apex/WFC27_Admin.startSchedules';
+import setTrainPaused from '@salesforce/apex/WFC27_Admin.setTrainPaused';
 import journey from '@salesforce/apex/WFC27_Admin.journey';
 import startBaseSync from '@salesforce/apex/WFC27_Admin.startBaseSync';
 import fieldRules from '@salesforce/apex/WFC27_Admin.fieldRules';
@@ -32,6 +32,10 @@ export default class Wfc27Console extends LightningElement {
   heartbeatTimer;
   progressTimer;
   heartbeatPercent = 0;
+  transportVisible = true;
+  activeTab = 'transport';
+  objectOptionsList = [];
+  objectSearch = '';
   @track journeyData;
   packetColumns = [
     { label: 'Packet', fieldName: 'Id' },
@@ -58,28 +62,47 @@ export default class Wfc27Console extends LightningElement {
 
   connectedCallback() {
     this.refresh();
-    this.heartbeatTimer = window.setInterval(() => this.refreshTransport(), 10000);
-    this.progressTimer = window.setInterval(() => this.updateHeartbeatProgress(), 250);
+    this.heartbeatTimer = window.setInterval(() => {
+      if (this.activeTab === 'transport') this.refreshTransport();
+      if (this.activeTab === 'objects') this.refreshSelectedFields();
+    }, 10000);
+    this.progressTimer = window.setInterval(() => { if (this.transportVisible) this.updateHeartbeatProgress(); }, 250);
   }
   disconnectedCallback() { window.clearInterval(this.heartbeatTimer); window.clearInterval(this.progressTimer); }
   async refresh() {
-    try { [this.rows, this.status] = await Promise.all([objects(), status()]); this.updateHeartbeatProgress(); this.error = null; }
+    try { [this.rows, this.status] = await Promise.all([objects(), status()]); this.updateObjectOptions(); this.updateHeartbeatProgress(); this.error = null; }
     catch (error) { this.error = error.body?.message || error.message; }
   }
   async refreshTransport() {
+    if (!this.transportVisible) return;
     try { this.status = await status(); this.updateHeartbeatProgress(); this.error = null; }
     catch (error) { this.error = error.body?.message || error.message; }
   }
+  showTransport() { this.activeTab = 'transport'; this.transportVisible = true; this.refreshTransport(); }
+  showObjects() { this.activeTab = 'objects'; this.transportVisible = false; this.refreshSelectedFields(); }
+  showFields() { this.activeTab = 'fields'; this.transportVisible = false; }
+  updateObjectOptions() {
+    const query = this.objectSearch.trim().toLowerCase();
+    const matches = this.rows.filter(row => (!row.bindingId || row.api === this.selectedObject) &&
+      (!query || row.api === this.selectedObject || row.label.toLowerCase().includes(query) || row.api.toLowerCase().includes(query)));
+    if (query) matches.sort((a, b) => Number(b.label.toLowerCase().startsWith(query)) - Number(a.label.toLowerCase().startsWith(query)) || a.label.localeCompare(b.label));
+    this.objectOptionsList = (query ? matches.slice(0, 50) : matches).map(row => ({ label: `${row.label} (${row.api})`, value: row.api }));
+  }
   updateHeartbeatProgress() {
     const last = this.status?.lastTrain ? new Date(this.status.lastTrain).getTime() : NaN;
-    this.heartbeatPercent = Number.isFinite(last) ? Math.min(100, Math.max(0, Math.floor((Date.now() - last) / 600))) : 0;
+    this.heartbeatPercent = !this.status?.trainPaused && Number.isFinite(last) ? Math.min(100, Math.max(0, Math.floor((Date.now() - last) / 600))) : 0;
   }
   get heartbeatStyle() { return `width: ${this.heartbeatPercent}%`; }
-  get heartbeatLabel() {
-    if (!this.status?.lastTrain) return 'Waiting for first train';
-    return this.heartbeatPercent >= 100 ? 'Next train is due' : `Next train in about ${Math.ceil((100 - this.heartbeatPercent) * 0.6)} seconds`;
+  get heartbeatCountdown() {
+    if (this.status?.trainPaused) return '—';
+    if (!this.status?.lastTrain) return '01:00';
+    const seconds = Math.max(0, Math.ceil((60000 - (Date.now() - new Date(this.status.lastTrain).getTime())) / 1000));
+    return `00:${String(seconds).padStart(2, '0')}`.replace('00:60', '01:00');
   }
-  get objectOptions() { return this.rows.filter(row => !row.bindingId || row.api === this.selectedObject).map(row => ({ label: `${row.label} (${row.api})`, value: row.api })); }
+  get trainStateLabel() { return this.status?.trainPaused ? 'Paused' : !this.status?.lastTrain ? 'Ready to start' : this.heartbeatPercent >= 100 ? 'Train due' : 'Running'; }
+  get trainControlIcon() { return this.status?.trainPaused || !this.status?.lastTrain ? 'utility:play' : 'utility:pause'; }
+  get trainControlLabel() { return this.status?.trainPaused || !this.status?.lastTrain ? 'Play sync train' : 'Pause sync train'; }
+  get objectOptions() { return this.objectOptionsList; }
   get configuredBindings() { return this.rows.filter(row => row.bindingId).map(row => ({ ...row,
     displayName: `${row.label} (${row.api})`,
     eligibilityLabel: row.hasFlag ? 'Present' : 'Missing',
@@ -94,6 +117,7 @@ export default class Wfc27Console extends LightningElement {
   get fieldSaveDisabled() { return !this.bindingId || !this.sourceField || !this.wpKey; }
   async chooseObject(event) {
     this.selectedObject = event.detail.value;
+    this.updateObjectOptions();
     const row = this.selectedRow;
     this.bindingId = row.bindingId;
     this.postType = row.postType || '';
@@ -104,17 +128,29 @@ export default class Wfc27Console extends LightningElement {
     this.sourceField = null;
     this.fieldRows = [];
     try {
-      this.fieldRows = await fields({ objectApi: this.selectedObject });
-      row.hasFlag = this.fieldRows.some(field => field.api === 'WFC27_Eligible__c' && field.type?.toLowerCase() === 'boolean');
+      await this.refreshSelectedFields();
       this.fieldRules = this.bindingId ? await fieldRules({ bindingId: this.bindingId }) : [];
       this.error = null;
     }
     catch (error) { this.error = error.body?.message || error.message; }
   }
+  async refreshSelectedFields() {
+    const objectApi = this.selectedObject;
+    if (!objectApi) return;
+    try {
+      const currentFields = await fields({ objectApi });
+      if (objectApi !== this.selectedObject) return;
+      this.fieldRows = currentFields;
+      const hasFlag = currentFields.some(field => field.api === 'WFC27_Eligible__c' && field.type?.toLowerCase() === 'boolean');
+      this.rows = this.rows.map(row => row.api === objectApi ? { ...row, hasFlag } : row);
+      this.error = null;
+    } catch (error) { this.error = error.body?.message || error.message; }
+  }
   async editObjectRule(event) {
     if (event.detail.action.name === 'edit') await this.chooseObject({ detail: { value: event.detail.row.api } });
   }
   changePostType(event) { this.postType = event.detail.value; }
+  changeObjectSearch(event) { this.objectSearch = event.target.value || ''; this.updateObjectOptions(); }
   changeEligibleStatus(event) { this.eligibleStatus = event.detail.value; }
   changeActive(event) { this.active = event.detail.checked; }
   changeDraft(event) { this.draftDays = event.detail.value; }
@@ -148,8 +184,13 @@ export default class Wfc27Console extends LightningElement {
       await this.refresh();
     } catch (error) { this.error = error.body?.message || error.message; }
   }
-  async startJobs() {
-    try { await startSchedules(); this.dispatchEvent(new ShowToastEvent({ title: 'Schedules started', variant: 'success' })); await this.refresh(); }
+  async toggleTrain() {
+    try {
+      const paused = Boolean(this.status?.lastTrain) && !this.status?.trainPaused;
+      await setTrainPaused({ paused });
+      this.dispatchEvent(new ShowToastEvent({ title: paused ? 'Sync train paused' : 'Sync train running', variant: 'success' }));
+      await this.refreshTransport();
+    }
     catch (error) { this.error = error.body?.message || error.message; }
   }
   async queueBaseSync() {

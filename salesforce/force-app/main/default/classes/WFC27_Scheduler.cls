@@ -1,11 +1,15 @@
 public without sharing class WFC27_Scheduler implements Schedulable {
     public void execute(SchedulableContext context) {
+        if (WFC27_Engine.settings().Train_Paused__c) return;
         scheduleNext();
         WFC27_Engine.tick();
     }
     public static void start() {
-        for (CronTrigger job : [SELECT Id FROM CronTrigger WHERE CronJobDetail.Name LIKE 'WFC27 Train %' AND State = 'WAITING']) System.abortJob(job.Id);
+        stop();
         scheduleNext();
+    }
+    public static void stop() {
+        for (CronTrigger job : [SELECT Id FROM CronTrigger WHERE CronJobDetail.Name LIKE 'WFC27 Train %' AND State = 'WAITING']) System.abortJob(job.Id);
     }
     private static void scheduleNext() {
         Datetime nextRun = System.now().addMinutes(1);

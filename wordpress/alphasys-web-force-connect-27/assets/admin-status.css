@@ -1,9 +1,34 @@
+.wfc27-train-widget {
+	max-width: 440px;
+	padding: 16px;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+	background: #f6f7f7;
+	margin: 18px 0;
+}
+
+.wfc27-train-widget h2 {
+	margin: 0;
+}
+
+.wfc27-train-countdown {
+	font-size: 40px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	line-height: 1.2;
+	margin-top: 12px;
+}
+
+.wfc27-train-widget p {
+	margin: 4px 0 0;
+}
+
 .wfc27-heartbeat {
 	height: 10px;
 	background: #dcdcde;
 	border-radius: 5px;
 	overflow: hidden;
-	margin-top: 18px;
+	margin-top: 10px;
 }
 
 .wfc27-heartbeat-fill {

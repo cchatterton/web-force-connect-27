@@ -11,6 +11,14 @@
 
 - Auto-refresh the WordPress heartbeat and queue counts, with a 60-second train progress bar that resets on each receipt.
 - Auto-refresh the Salesforce transport status and show the same heartbeat progress.
+- Make the Salesforce object picker searchable and keep its options stable while the console updates.
+- Recheck the selected object's eligibility field while Object bindings is open; render the binding form in columns.
+- Add a Salesforce pause/play control that stops and restarts the train schedule, with state sent to WordPress.
+
+## 0.1.3 - development
+
+- Show a Sync Train Arriving countdown widget in WordPress and display the paused state received from Salesforce.
+- Remove the redundant last and next train timestamp rows.
 
 ## 0.1.1 - development
 

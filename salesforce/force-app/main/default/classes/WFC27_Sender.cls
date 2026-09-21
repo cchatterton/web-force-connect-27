@@ -20,6 +20,8 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
         for (WFC27_Deletion_Ack__c row : ackRows) deletionAcks.add(new Map<String,Object>{'sf_id' => row.Source_ID__c, 'wp_id' => row.WP_Post_ID__c});
         summary.put('acknowledged_results', ackIds);
         summary.put('acknowledged_deletions', deletionAcks);
+        List<WFC27_Settings__c> trainSettings = [SELECT Train_Paused__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
+        summary.put('train_state', !trainSettings.isEmpty() && trainSettings[0].Train_Paused__c ? 'paused' : 'running');
         HttpRequest request = new HttpRequest();
         request.setEndpoint('callout:WFC27_WordPress/?rest_route=/wfc27/v1/train');
         request.setMethod('POST');

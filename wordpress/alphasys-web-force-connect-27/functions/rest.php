@@ -49,6 +49,9 @@ function wfc27_receive_train( WP_REST_Request $request ) {
 		return new WP_Error( 'wfc27_invalid_packet', 'Content requires a packet ID.', array( 'status' => 400 ) );
 	}
 	wfc27_acknowledge_results( $payload['summary'] );
+	if ( isset( $payload['summary']['train_state'] ) && in_array( $payload['summary']['train_state'], array( 'running', 'paused' ), true ) ) {
+		update_option( 'wfc27_train_state', $payload['summary']['train_state'], false );
+	}
 	update_option( 'wfc27_last_heartbeat', current_time( 'mysql', true ), false );
 	$response = wfc27_pending_results( $packet_id );
 	$response['summary'] = array( 'received_packet_id' => $packet_id );

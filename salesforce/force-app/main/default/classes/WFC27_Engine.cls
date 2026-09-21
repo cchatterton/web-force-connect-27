@@ -1,7 +1,8 @@
 public without sharing class WFC27_Engine {
     public static void tick() {
         WFC27_Settings__c settings = settings();
-        settings = [SELECT Id, Batch_Size__c, Last_Tick_At__c, Last_Scan_At__c FROM WFC27_Settings__c WHERE Id = :settings.Id FOR UPDATE];
+        settings = [SELECT Id, Batch_Size__c, Last_Tick_At__c, Last_Scan_At__c, Train_Paused__c FROM WFC27_Settings__c WHERE Id = :settings.Id FOR UPDATE];
+        if (settings.Train_Paused__c) return;
         List<WFC27_Config.Binding> bindings = WFC27_Config.activeBindings();
         Integer scanPage = bindings.isEmpty() ? 1000 : Math.max(1, Math.min(1000, 4000 / bindings.size()));
         for (WFC27_Config.Binding binding : bindings) scan(binding, scanPage);
@@ -12,7 +13,7 @@ public without sharing class WFC27_Engine {
     }
 
     public static WFC27_Settings__c settings() {
-        List<WFC27_Settings__c> rows = [SELECT Id, Name, Batch_Size__c, Last_Tick_At__c, Last_Scan_At__c, Last_Base_Sync_At__c, Last_Error__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
+        List<WFC27_Settings__c> rows = [SELECT Id, Name, Batch_Size__c, Last_Tick_At__c, Last_Scan_At__c, Last_Base_Sync_At__c, Last_Error__c, Train_Paused__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
         if (!rows.isEmpty()) return rows[0];
         WFC27_Settings__c row = new WFC27_Settings__c(Name='Default', Batch_Size__c=25);
         insert row;

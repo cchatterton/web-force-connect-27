@@ -106,7 +106,7 @@ public with sharing class WFC27_Admin {
     @AuraEnabled
     public static Map<String,Object> status() {
         requireManage();
-        List<WFC27_Settings__c> settings = [SELECT Batch_Size__c, Last_Tick_At__c, Last_Error__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
+        List<WFC27_Settings__c> settings = [SELECT Batch_Size__c, Last_Tick_At__c, Last_Error__c, Train_Paused__c FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
         Integer waiting = [SELECT COUNT() FROM WFC27_Queue__c WHERE Status__c = 'pending'];
         Integer errors = [SELECT COUNT() FROM WFC27_Packet__c WHERE Status__c = 'error'];
         Long totalWaitMs = 0;
@@ -121,6 +121,7 @@ public with sharing class WFC27_Admin {
             FROM WFC27_Packet__c ORDER BY CreatedDate DESC LIMIT 20];
         return new Map<String,Object>{'waiting' => waiting, 'errors' => errors, 'batchSize' => settings.isEmpty() ? 25 : settings[0].Batch_Size__c,
             'lastTrain' => settings.isEmpty() ? null : settings[0].Last_Tick_At__c,
+            'trainPaused' => !settings.isEmpty() && settings[0].Train_Paused__c,
             'lastError' => settings.isEmpty() ? null : settings[0].Last_Error__c,
             'averageWaitSeconds' => waitSamples == 0 ? null : Math.round((Decimal)totalWaitMs / waitSamples / 1000),
             'nextExpected' => settings.isEmpty() || settings[0].Last_Tick_At__c == null ? null : settings[0].Last_Tick_At__c.addMinutes(1),
@@ -139,8 +140,28 @@ public with sharing class WFC27_Admin {
     @AuraEnabled
     public static void startSchedules() {
         requireManage();
+        WFC27_Settings__c settings = WFC27_Engine.settings();
+        settings.Train_Paused__c = false;
+        update settings;
         WFC27_Scheduler.start();
         WFC27_Retention.startDaily();
+    }
+
+    @AuraEnabled
+    public static void setTrainPaused(Boolean paused) {
+        requireManage();
+        if (paused == null) throw new AuraHandledException('Choose pause or play.');
+        WFC27_Settings__c settings = WFC27_Engine.settings();
+        if (paused && settings.Train_Paused__c) return;
+        settings.Train_Paused__c = paused;
+        if (!paused) settings.Last_Tick_At__c = System.now();
+        update settings;
+        if (paused) WFC27_Scheduler.stop();
+        else {
+            WFC27_Scheduler.start();
+            if ([SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name = 'WFC27 Retention' AND State = 'WAITING'] == 0) WFC27_Retention.startDaily();
+        }
+        System.enqueueJob(new WFC27_Sender(null));
     }
 
     @AuraEnabled

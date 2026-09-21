@@ -238,6 +238,11 @@
     <field>WFC27_Settings__c.Last_Tick_At__c</field>
     <readable>true</readable>
   </fieldPermissions>
+  <fieldPermissions>
+    <editable>true</editable>
+    <field>WFC27_Settings__c.Train_Paused__c</field>
+    <readable>true</readable>
+  </fieldPermissions>
   <label>WFC27 Administrator</label>
   <objectPermissions>
     <allowCreate>true</allowCreate>
