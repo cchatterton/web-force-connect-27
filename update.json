@@ -1,4 +1,4 @@
 {
-  "version": "0.2.0",
-  "body": "WFC27 now transports opaque JSON between durable stations in Salesforce and WordPress. Content processing is removed."
+  "version": "0.2.1",
+  "body": "Add an administrator form to stage outbound JSON for bidirectional station tests."
 }

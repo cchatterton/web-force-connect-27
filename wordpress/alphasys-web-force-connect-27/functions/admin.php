@@ -9,6 +9,7 @@ function wfc27_register_admin_page() {
 }
 
 add_action( 'admin_post_wfc27_save_receiver', 'wfc27_admin_save_receiver' );
+add_action( 'admin_post_wfc27_stage_json', 'wfc27_admin_stage_json' );
 add_action( 'wp_ajax_wfc27_status', 'wfc27_admin_ajax_status' );
 add_action( 'admin_enqueue_scripts', 'wfc27_admin_enqueue_status' );
 function wfc27_admin_enqueue_status( $hook ) {
@@ -67,6 +68,19 @@ function wfc27_admin_save_receiver() {
 	wp_safe_redirect( admin_url( 'admin.php?page=wfc27&receiver_saved=1' ) );
 	exit;
 }
+function wfc27_admin_stage_json() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'Insufficient permissions.' );
+	}
+	check_admin_referer( 'wfc27_stage_json' );
+	$json = isset( $_POST['station_json'] ) ? wp_unslash( $_POST['station_json'] ) : '';
+	$result = wfc27_stage_outbound( $json );
+	if ( is_wp_error( $result ) ) {
+		wp_die( esc_html( $result->get_error_message() ) );
+	}
+	wp_safe_redirect( admin_url( 'admin.php?page=wfc27&staged=' . rawurlencode( $result ) ) );
+	exit;
+}
 function wfc27_render_admin_page() {
 	global $wpdb;
 	$station = wfc27_station_table();
@@ -92,7 +106,15 @@ function wfc27_render_admin_page() {
 		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Sent</th><th>Received</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="3">Loading trips…</td></tr></tbody></table>
 		<p><strong>Receive endpoint:</strong> <code><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></p>
 		<h2>Station</h2>
+		<?php if ( isset( $_GET['staged'] ) ) : ?><div class="notice notice-success"><p>JSON staged for the next train.</p></div><?php endif; ?>
 		<p id="wfc27-queue-counts"><?php foreach ( $counts as $count ) { echo esc_html( ucfirst( $count['status'] ) . ': ' . $count['total'] ) . ' &nbsp; '; } ?></p>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="wfc27_stage_json">
+			<?php wp_nonce_field( 'wfc27_stage_json' ); ?>
+			<label for="wfc27-station-json">Stage outbound JSON for a train test</label><br>
+			<textarea id="wfc27-station-json" name="station_json" rows="4" cols="80" required></textarea><br>
+			<?php submit_button( 'Stage JSON', 'secondary', 'submit', false ); ?>
+		</form>
 		<table class="widefat striped"><thead><tr><th>ID</th><th>Status</th><th>JSON</th></tr></thead><tbody>
 		<?php foreach ( $rows as $row ) : ?>
 		<tr><td><code><?php echo esc_html( $row['envelope_id'] ); ?></code></td><td><?php echo esc_html( $row['status'] ); ?></td><td><code><?php echo esc_html( wp_html_excerpt( $row['json'], 160, '…' ) ); ?></code></td></tr>
