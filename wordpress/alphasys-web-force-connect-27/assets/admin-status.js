@@ -31,9 +31,15 @@
 		const percent = Math.min(100, Math.floor(elapsed / 600));
 		fill.style.width = `${percent}%`;
 		bar.setAttribute('aria-valuenow', String(percent));
-		const seconds = Math.max(0, Math.ceil((60000 - elapsed) / 1000));
-		countdown.textContent = seconds === 60 ? '01:00' : `00:${String(seconds).padStart(2, '0')}`;
-		label.textContent = elapsed >= 60000 ? 'Train due' : 'Running';
+		if (elapsed >= 60000) {
+			const overdue = Math.floor((elapsed - 60000) / 1000);
+			countdown.textContent = `+${String(Math.floor(overdue / 60)).padStart(2, '0')}:${String(overdue % 60).padStart(2, '0')}`;
+			label.textContent = 'Awaiting train';
+		} else {
+			const seconds = Math.ceil((60000 - elapsed) / 1000);
+			countdown.textContent = seconds === 60 ? '01:00' : `00:${String(seconds).padStart(2, '0')}`;
+			label.textContent = 'Running';
+		}
 	}
 
 	async function refresh() {

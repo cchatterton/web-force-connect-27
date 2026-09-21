@@ -3,7 +3,7 @@ Contributors: alphasys
 Tags: salesforce, integration, transport, json
 Requires at least: 6.0
 Tested up to: 7.1.1
-Stable tag: 0.3.2
+Stable tag: 0.3.3
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -19,6 +19,9 @@ WFC27 receives authenticated station trains from Salesforce. It stores inbound t
 Install and activate the plugin. Create an Application Password for a WordPress administrator or choose a dedicated receiver user in WFC27 settings. Set the Salesforce Named Credential to the HTTPS endpoint shown on the WFC27 admin page. The Salesforce package creates the counterpart station and controls the one-minute train.
 
 == Changelog ==
+
+= 0.3.3 =
+Show how long a sync train is overdue instead of leaving the countdown at zero.
 
 = 0.3.2 =
 Show all four dashboard widgets across at standard desktop widths.

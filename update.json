@@ -1,4 +1,4 @@
 {
-  "version": "0.3.2",
-  "body": "Show all four WordPress dashboard widgets across at standard desktop widths."
+  "version": "0.3.3",
+  "body": "Show how long a sync train is overdue instead of leaving the countdown at zero."
 }

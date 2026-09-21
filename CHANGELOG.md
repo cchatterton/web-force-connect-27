@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.3
+- Show elapsed delay while awaiting a late train instead of freezing the countdown at 00:00.
+
 ## 0.3.2
 - Keep the four dashboard cells side by side at standard desktop widths.
 
