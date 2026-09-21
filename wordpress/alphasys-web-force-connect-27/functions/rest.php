@@ -49,10 +49,10 @@ function wfc27_receive_train( WP_REST_Request $request ) {
 	}
 	foreach ( $data['receipts'] as $id ) {
 		if ( is_string( $id ) && preg_match( '/^[0-9a-f-]{36}$/', $id ) ) {
-			$wpdb->update( $station, array( 'status' => 'outbound_delivered' ), array( 'envelope_id' => $id, 'status' => 'outbound_ready' ), array( '%s' ), array( '%s', '%s' ) );
+			$wpdb->query( $wpdb->prepare( "UPDATE {$station} SET status = %s WHERE envelope_id = %s AND status IN (%s, %s)", 'outbound_delivered', $id, 'outbound_ready', 'outbound_pending' ) );
 		}
 	}
-	$outbound = $wpdb->get_results( $wpdb->prepare( "SELECT envelope_id,json FROM {$station} WHERE status = %s ORDER BY envelope_id LIMIT %d", 'outbound_ready', $capacity ), ARRAY_A );
+	$outbound = $wpdb->get_results( $wpdb->prepare( "SELECT envelope_id,json,status FROM {$station} WHERE status IN (%s, %s) ORDER BY CASE WHEN status = %s THEN 0 ELSE 1 END, envelope_id LIMIT %d", 'outbound_pending', 'outbound_ready', 'outbound_pending', $capacity ), ARRAY_A );
 	$envelopes = array();
 	$response_bytes = 0;
 	foreach ( $outbound as $row ) {
@@ -61,6 +61,15 @@ function wfc27_receive_train( WP_REST_Request $request ) {
 			break;
 		}
 		$envelopes[] = array( 'id' => $row['envelope_id'], 'payload' => $row['json'] );
+	}
+	foreach ( $outbound as $row ) {
+		if ( 'outbound_ready' !== $row['status'] || ! in_array( $row['envelope_id'], array_column( $envelopes, 'id' ), true ) ) {
+			continue;
+		}
+		$updated = $wpdb->update( $station, array( 'status' => 'outbound_pending' ), array( 'envelope_id' => $row['envelope_id'], 'status' => 'outbound_ready' ), array( '%s' ), array( '%s', '%s' ) );
+		if ( false === $updated ) {
+			return new WP_Error( 'wfc27_storage_error', 'Station could not mark an outbound envelope pending.', array( 'status' => 500 ) );
+		}
 	}
 	if ( isset( $data['train_state'] ) && in_array( $data['train_state'], array( 'running', 'paused' ), true ) ) {
 		update_option( 'wfc27_train_state', $data['train_state'], false );

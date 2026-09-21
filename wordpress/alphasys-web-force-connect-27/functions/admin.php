@@ -34,6 +34,7 @@ function wfc27_admin_ajax_status() {
 	$counts = $wpdb->get_results( 'SELECT status, COUNT(*) AS total FROM ' . wfc27_station_table() . ' GROUP BY status', ARRAY_A );
 	$parts = array();
 	$waiting = 0;
+	$pending = 0;
 	$filter = isset( $_POST['trip_filter'] ) ? sanitize_key( wp_unslash( $_POST['trip_filter'] ) ) : 'hour';
 	$day = isset( $_POST['trip_day'] ) ? sanitize_text_field( wp_unslash( $_POST['trip_day'] ) ) : '';
 	$hour = isset( $_POST['trip_hour'] ) ? absint( wp_unslash( $_POST['trip_hour'] ) ) : 0;
@@ -50,12 +51,14 @@ function wfc27_admin_ajax_status() {
 	foreach ( $counts as $count ) {
 		$parts[] = ucfirst( $count['status'] ) . ': ' . $count['total'];
 		if ( 'outbound_ready' === $count['status'] ) { $waiting = (int) $count['total']; }
+		if ( 'outbound_pending' === $count['status'] ) { $pending = (int) $count['total']; }
 	}
 	wp_send_json_success( array(
 		'last' => $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : null,
 		'state' => get_option( 'wfc27_train_state', 'running' ),
 		'counts' => implode( ' · ', $parts ),
 		'waiting' => $waiting,
+		'pending' => $pending,
 		'trips' => $trips,
 	) );
 }
@@ -94,7 +97,11 @@ function wfc27_render_admin_page() {
 	$station = wfc27_station_table();
 	$counts = $wpdb->get_results( "SELECT status, COUNT(*) AS total FROM {$station} GROUP BY status", ARRAY_A );
 	$waiting = 0;
-	foreach ( $counts as $count ) { if ( 'outbound_ready' === $count['status'] ) { $waiting = (int) $count['total']; } }
+	$pending = 0;
+	foreach ( $counts as $count ) {
+		if ( 'outbound_ready' === $count['status'] ) { $waiting = (int) $count['total']; }
+		if ( 'outbound_pending' === $count['status'] ) { $pending = (int) $count['total']; }
+	}
 	$last = get_option( 'wfc27_last_heartbeat', '' );
 	$receiver_id = (int) get_option( 'wfc27_receiver_user_id', 0 );
 	$credentials_url = $receiver_id ? get_edit_user_link( $receiver_id ) : admin_url( 'profile.php' );
@@ -109,6 +116,7 @@ function wfc27_render_admin_page() {
 			<p id="wfc27-heartbeat-label" aria-live="polite">Waiting for train status</p>
 			<div class="wfc27-heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-state="<?php echo esc_attr( get_option( 'wfc27_train_state', 'running' ) ); ?>" data-last="<?php echo esc_attr( $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : '' ); ?>"><div class="wfc27-heartbeat-fill"></div></div>
 			<p id="wfc27-waiting-count">Items waiting to send: <?php echo esc_html( (string) $waiting ); ?></p>
+			<p id="wfc27-pending-count">Awaiting receipt: <?php echo esc_html( (string) $pending ); ?></p>
 		</section>
 		<section class="wfc27-endpoint-widget" aria-label="Receive endpoint">
 			<h2>Receive endpoint</h2>

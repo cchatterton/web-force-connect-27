@@ -1,4 +1,4 @@
 {
-  "version": "0.3.3",
-  "body": "Show how long a sync train is overdue instead of leaving the countdown at zero."
+  "version": "0.3.4",
+  "body": "Show pending receipts separately and keep packet payloads immutable after first pickup; show overdue time in Salesforce."
 }

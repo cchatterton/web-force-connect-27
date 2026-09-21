@@ -24,13 +24,21 @@ try {
 		throw new RuntimeException( 'First train did not exchange envelopes.' );
 	}
 	global $wpdb;
+	$station = wfc27_station_table();
+	$pending_status = $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$station} WHERE envelope_id = %s", $outbound ) );
+	if ( 'outbound_pending' !== $pending_status ) {
+		throw new RuntimeException( 'Sent packet should await a receipt.' );
+	}
 	$trip_id = (int) $wpdb->get_var( 'SELECT MAX(id) FROM ' . wfc27_trips_table() );
 	$members = $wpdb->get_results( $wpdb->prepare( 'SELECT envelope_id,direction FROM ' . wfc27_trip_packets_table() . ' WHERE trip_id = %d ORDER BY direction', $trip_id ), ARRAY_A );
 	if ( count( $members ) !== 2 || $members[0]['envelope_id'] !== 'sf:' . $source_id || $members[0]['direction'] !== 'received' || $members[1]['envelope_id'] !== $outbound || $members[1]['direction'] !== 'sent' ) {
 		throw new RuntimeException( 'Sync does not list its sent and received packets.' );
 	}
+	$retry = $train( array(), array() );
+	if ( count( $retry['envelopes'] ) !== 1 || $retry['envelopes'][0]['id'] !== $outbound ) {
+		throw new RuntimeException( 'Unacknowledged packet was not reoffered.' );
+	}
 	$train( array( array( 'id' => $source_id, 'payload' => 'not JSON from Salesforce' ) ), array( $outbound ) );
-	$station = wfc27_station_table();
 	$inbound_count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$station} WHERE envelope_id = %s", 'sf:' . $source_id ) );
 	$outbound_status = $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$station} WHERE envelope_id = %s", $outbound ) );
 	$inbound_payload = $wpdb->get_var( $wpdb->prepare( "SELECT json FROM {$station} WHERE envelope_id = %s", 'sf:' . $source_id ) );

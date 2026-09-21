@@ -49,10 +49,15 @@ export default class Wfc27Console extends LightningElement {
   get heartbeatCountdown() {
     if (this.status?.trainPaused) return '—';
     if (!this.status?.lastTrain) return '01:00';
-    const seconds = Math.max(0, Math.ceil((60000 - (Date.now() - new Date(this.status.lastTrain).getTime())) / 1000));
-    return seconds === 60 ? '01:00' : `00:${String(seconds).padStart(2, '0')}`;
+	const elapsed = Math.max(0, Date.now() - new Date(this.status.lastTrain).getTime());
+	if (elapsed >= 60000) {
+	  const overdue = Math.floor((elapsed - 60000) / 1000);
+	  return `+${String(Math.floor(overdue / 60)).padStart(2, '0')}:${String(overdue % 60).padStart(2, '0')}`;
+	}
+	const seconds = Math.ceil((60000 - elapsed) / 1000);
+	return seconds === 60 ? '01:00' : `00:${String(seconds).padStart(2, '0')}`;
   }
-  get trainStateLabel() { return this.status?.trainPaused ? 'Paused' : !this.status?.lastTrain ? 'Ready to start' : this.heartbeatPercent >= 100 ? 'Train due' : 'Running'; }
+	get trainStateLabel() { return this.status?.trainPaused ? 'Paused' : !this.status?.lastTrain ? 'Ready to start' : this.heartbeatPercent >= 100 ? 'Awaiting train' : 'Running'; }
   get trainControlIcon() { return this.status?.trainPaused || !this.status?.lastTrain ? 'utility:play' : 'utility:pause'; }
   get trainControlLabel() { return this.status?.trainPaused || !this.status?.lastTrain ? 'Play sync train' : 'Pause sync train'; }
   changeTripPeriod(event) { this.tripPeriod = event.detail.value; this.refresh(); }

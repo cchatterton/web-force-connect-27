@@ -67,7 +67,7 @@ function wfc27_render_station_list() {
 	global $wpdb;
 	$table = wfc27_station_table();
 	$status = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
-	$allowed = array( 'outbound_ready', 'outbound_delivered', 'inbound_received', 'inbound_acked' );
+	$allowed = array( 'outbound_ready', 'outbound_pending', 'outbound_delivered', 'inbound_received', 'inbound_acked' );
 	if ( ! in_array( $status, $allowed, true ) ) {
 		$status = '';
 	}
@@ -134,7 +134,7 @@ function wfc27_render_station_item( $id ) {
 		<?php if ( ! $new ) : ?><table class="form-table"><tr><th>Envelope ID</th><td><code><?php echo esc_html( $item['envelope_id'] ); ?></code></td></tr><tr><th>Status</th><td><?php echo esc_html( $item['status'] ); ?></td></tr></table><?php endif; ?>
 		<h2>Payload</h2>
 		<?php if ( $editable ) : ?>
-			<p>Enter any text. It will travel on the next train while its status is outbound_ready.</p>
+			<p>Enter any text. It can be edited until its first train pickup.</p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="wfc27_save_station_item"><input type="hidden" name="station_id" value="<?php echo esc_attr( $new ? '' : $id ); ?>">
 				<?php wp_nonce_field( 'wfc27_save_station_item' ); ?>
@@ -142,7 +142,7 @@ function wfc27_render_station_item( $id ) {
 				<?php submit_button( $new ? 'Add Sync Packet' : 'Save payload' ); ?>
 			</form>
 		<?php else : ?>
-			<p>This item has left the outbound queue or arrived from Salesforce, so its transport payload is read-only.</p>
+			<p>This packet has been offered to Salesforce or arrived from Salesforce. Its transport payload is read-only.</p>
 			<pre style="max-width:100%;overflow:auto;background:#fff;padding:16px;border:1px solid #c3c4c7"><?php echo esc_html( $pretty ); ?></pre>
 		<?php endif; ?>
 		<?php if ( ! $new ) : ?>

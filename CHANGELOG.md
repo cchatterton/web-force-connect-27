@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+- WordPress distinguishes packets awaiting a receipt from packets not yet picked up, reoffers unacknowledged packets, and locks their payload after pickup.
+- Salesforce shows elapsed overdue time while awaiting a late train.
+
 ## 0.3.3
 - Show elapsed delay while awaiting a late train instead of freezing the countdown at 00:00.
 
