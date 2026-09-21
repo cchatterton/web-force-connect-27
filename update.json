@@ -1,4 +1,4 @@
 {
-  "version": "0.3.1",
-  "body": "Add four dashboard widgets and link Recent Sync rows to their Sync Packets."
+  "version": "0.3.2",
+  "body": "Show all four WordPress dashboard widgets across at standard desktop widths."
 }

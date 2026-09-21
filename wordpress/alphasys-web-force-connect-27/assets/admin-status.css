@@ -17,7 +17,7 @@
 .wfc27-trip-filters { display: grid; gap: 10px; }
 .wfc27-trip-filters label { display: flex; flex-direction: column; gap: 4px; }
 .wfc27-trip-filters select, .wfc27-trip-filters input { width: 100%; max-width: 100%; }
-@media (max-width: 1400px) { .wfc27-top-widgets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1200px) { .wfc27-top-widgets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 782px) { .wfc27-top-widgets { grid-template-columns: 1fr; } }
 
 .wfc27-train-widget h2 {

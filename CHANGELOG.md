@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2
+- Keep the four dashboard cells side by side at standard desktop widths.
+
 ## 0.3.1
 - WordPress dashboard uses four cells for the train, receive endpoint, integration user, and sync filters.
 - Standalone station list is named Sync Packets; the duplicate station block was removed from the dashboard.
