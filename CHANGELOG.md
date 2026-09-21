@@ -1,5 +1,10 @@
 # Changelog
 
+## Salesforce native sync records
+- Add a native WFC27 Recent Sync tab and record layout.
+- Add child WFC27 Sync Packet memberships so a sync record links to every sent and received station packet.
+- Link Salesforce console sync rows to their native records.
+
 ## 0.3.7
 - Put the waiting packet count back inside the WordPress and Salesforce train widgets; remove the separate WordPress station line.
 - Match widget colours, heading and countdown scale, bar size, and count placement across both platforms.

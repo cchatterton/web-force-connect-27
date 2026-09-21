@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata"><deploymentStatus>Deployed</deploymentStatus><label>WFC27 Sync Packet Membership</label><nameField><displayFormat>MEMBER-{000000}</displayFormat><label>Membership Number</label><type>AutoNumber</type></nameField><pluralLabel>WFC27 Sync Packet Memberships</pluralLabel><sharingModel>ControlledByParent</sharingModel></CustomObject>

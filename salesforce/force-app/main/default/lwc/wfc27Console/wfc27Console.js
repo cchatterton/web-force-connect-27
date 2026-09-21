@@ -3,7 +3,6 @@ import status from '@salesforce/apex/WFC27_Admin.status';
 import getTrips from '@salesforce/apex/WFC27_Admin.trips';
 import setBatchSize from '@salesforce/apex/WFC27_Admin.setBatchSize';
 import setTrainPaused from '@salesforce/apex/WFC27_Admin.setTrainPaused';
-import stage from '@salesforce/apex/WFC27_Admin.stage';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class Wfc27Console extends LightningElement {
@@ -11,7 +10,6 @@ export default class Wfc27Console extends LightningElement {
   @track trips = [];
   error;
   batchSize;
-  json = '';
   heartbeatTimer;
   progressTimer;
   heartbeatPercent = 0;
@@ -20,11 +18,10 @@ export default class Wfc27Console extends LightningElement {
   tripHour = String(new Date().getUTCHours());
   tripPeriods = [{ label: 'Last hour', value: 'hour' }, { label: 'Last 24 hours', value: 'day' }, { label: 'Day (UTC)', value: 'date' }, { label: 'Hour in day (UTC)', value: 'date_hour' }];
   tripHours = Array.from({ length: 24 }, (_, hour) => ({ label: `${String(hour).padStart(2, '0')}:00`, value: String(hour) }));
-  tripColumns = [{ label: 'Departed', fieldName: 'CreatedDate', type: 'date', typeAttributes: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit' } },
+  tripColumns = [{ label: 'Sync', fieldName: 'recordUrl', type: 'url', typeAttributes: { label: { fieldName: 'Name' } } },
+    { label: 'Departed', fieldName: 'CreatedDate', type: 'date', typeAttributes: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' } },
     { label: 'Packets sent', fieldName: 'Sent_Count__c', type: 'number' }, { label: 'Packets received', fieldName: 'Received_Count__c', type: 'number' },
     { label: 'Result', fieldName: 'Result__c' }, { label: 'Error', fieldName: 'Error__c' }];
-  stationColumns = [{ label: 'ID', fieldName: 'Envelope_ID__c' }, { label: 'Status', fieldName: 'Status__c' },
-    { label: 'JSON', fieldName: 'preview' }];
 
   connectedCallback() {
     this.refresh();
@@ -35,8 +32,8 @@ export default class Wfc27Console extends LightningElement {
   async refresh() {
     try {
       const [state, rows] = await Promise.all([status(), getTrips({ period: this.tripPeriod, day: this.tripDay, hour: Number(this.tripHour) })]);
-      this.status = { ...state, station: state.station.map(row => ({ ...row, preview: row.Payload__c?.slice(0, 160) || '' })) };
-      this.trips = rows;
+      this.status = state;
+      this.trips = rows.map(row => ({ ...row, recordUrl: `/lightning/r/WFC27_Trip__c/${row.Id}/view` }));
       this.updateHeartbeatProgress();
       this.error = null;
     } catch (error) { this.error = error.body?.message || error.message; }
@@ -64,7 +61,6 @@ export default class Wfc27Console extends LightningElement {
   changeTripDay(event) { this.tripDay = event.detail.value; this.refresh(); }
   changeTripHour(event) { this.tripHour = event.detail.value; this.refresh(); }
   changeBatch(event) { this.batchSize = event.detail.value; }
-  changeJson(event) { this.json = event.detail.value; }
   async saveBatch() {
     try { await setBatchSize({ size: Number(this.batchSize) }); await this.refresh(); this.dispatchEvent(new ShowToastEvent({ title: 'Train capacity saved', variant: 'success' })); }
     catch (error) { this.error = error.body?.message || error.message; }
@@ -75,14 +71,6 @@ export default class Wfc27Console extends LightningElement {
       await setTrainPaused({ paused });
       await this.refresh();
       this.dispatchEvent(new ShowToastEvent({ title: paused ? 'Train paused' : 'Train running', variant: 'success' }));
-    } catch (error) { this.error = error.body?.message || error.message; }
-  }
-  async stageJson() {
-    try {
-      const id = await stage({ json: this.json });
-      this.json = '';
-      await this.refresh();
-      this.dispatchEvent(new ShowToastEvent({ title: `Staged ${id}`, variant: 'success' }));
     } catch (error) { this.error = error.body?.message || error.message; }
   }
 }

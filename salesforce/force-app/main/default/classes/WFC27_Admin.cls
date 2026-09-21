@@ -10,15 +10,12 @@ public with sharing class WFC27_Admin {
             FROM WFC27_Settings__c WHERE Name = 'Default' LIMIT 1];
         WFC27_Settings__c settings = rows.isEmpty() ? null : rows[0];
         Integer waiting = [SELECT COUNT() FROM WFC27_Station__c WHERE Status__c = 'outbound_ready'];
-        List<WFC27_Station__c> station = [SELECT Id, Envelope_ID__c, Status__c, Payload__c, CreatedDate
-            FROM WFC27_Station__c ORDER BY CreatedDate DESC LIMIT 50];
         return new Map<String,Object>{
             'waiting' => waiting,
             'batchSize' => settings == null ? 25 : settings.Batch_Size__c,
             'lastTrain' => settings == null ? null : settings.Last_Tick_At__c,
             'trainPaused' => settings != null && settings.Train_Paused__c,
-            'lastError' => settings == null ? null : settings.Last_Error__c,
-            'station' => station
+            'lastError' => settings == null ? null : settings.Last_Error__c
         };
     }
 
@@ -33,7 +30,7 @@ public with sharing class WFC27_Admin {
             start = Datetime.newInstanceGmt(selected.year(), selected.month(), selected.day(), selectedHour, 0, 0);
             finish = period == 'date_hour' ? start.addHours(1) : start.addDays(1);
         }
-        return [SELECT Id, CreatedDate, Sent_Count__c, Received_Count__c, Result__c, Error__c
+        return [SELECT Id, Name, CreatedDate, Sent_Count__c, Received_Count__c, Result__c, Error__c
             FROM WFC27_Trip__c WHERE CreatedDate >= :start AND CreatedDate < :finish AND Sent_Count__c != null ORDER BY CreatedDate DESC LIMIT 120];
     }
 

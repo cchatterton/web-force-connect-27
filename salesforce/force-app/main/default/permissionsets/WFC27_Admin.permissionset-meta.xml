@@ -9,6 +9,7 @@
   <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>WFC27_Station__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
   <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>WFC27_Settings__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
   <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>WFC27_Trip__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+  <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>WFC27_Trip_Packet__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
   <fieldPermissions><editable>true</editable><field>WFC27_Station__c.Envelope_ID__c</field><readable>true</readable></fieldPermissions>
   <fieldPermissions><editable>true</editable><field>WFC27_Station__c.Payload__c</field><readable>true</readable></fieldPermissions>
   <fieldPermissions><editable>true</editable><field>WFC27_Station__c.Status__c</field><readable>true</readable></fieldPermissions>
@@ -20,6 +21,8 @@
   <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Received_Count__c</field><readable>true</readable></fieldPermissions>
   <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Result__c</field><readable>true</readable></fieldPermissions>
   <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Error__c</field><readable>true</readable></fieldPermissions>
+  <fieldPermissions><editable>true</editable><field>WFC27_Trip_Packet__c.Packet__c</field><readable>true</readable></fieldPermissions>
   <tabSettings><tab>WFC27_Console</tab><visibility>Visible</visibility></tabSettings>
   <tabSettings><tab>WFC27_Station__c</tab><visibility>Visible</visibility></tabSettings>
+  <tabSettings><tab>WFC27_Trip__c</tab><visibility>Visible</visibility></tabSettings>
 </PermissionSet>

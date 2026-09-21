@@ -26,6 +26,12 @@ private class WFC27_TransportTest {
         WFC27_Station__c inbound = [SELECT Status__c, Payload__c FROM WFC27_Station__c WHERE Envelope_ID__c = 'wp:wp-test-1' LIMIT 1];
         System.assertEquals('inbound_received', inbound.Status__c);
         System.assertEquals('jibberish from WordPress', inbound.Payload__c);
+        WFC27_Trip__c trip = [SELECT Id FROM WFC27_Trip__c LIMIT 1];
+        List<WFC27_Trip_Packet__c> members = [SELECT Direction__c, Packet__c FROM WFC27_Trip_Packet__c WHERE Trip__c = :trip.Id];
+        System.assertEquals(2, members.size());
+        Set<String> directions = new Set<String>();
+        for (WFC27_Trip_Packet__c member : members) directions.add(member.Direction__c);
+        System.assertEquals(new Set<String>{'Sent', 'Received'}, directions);
     }
 
     @IsTest static void directStationRecordIsReadyForTheTrain() {

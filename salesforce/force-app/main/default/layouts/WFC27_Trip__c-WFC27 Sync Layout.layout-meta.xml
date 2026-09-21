@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Layout xmlns="http://soap.sforce.com/2006/04/metadata">
+<layoutSections><customLabel>false</customLabel><detailHeading>false</detailHeading><editHeading>true</editHeading><label>Sync</label><layoutColumns><layoutItems><behavior>Readonly</behavior><field>Name</field></layoutItems><layoutItems><behavior>Readonly</behavior><field>Result__c</field></layoutItems><layoutItems><behavior>Readonly</behavior><field>Error__c</field></layoutItems></layoutColumns><layoutColumns><layoutItems><behavior>Readonly</behavior><field>Sent_Count__c</field></layoutItems><layoutItems><behavior>Readonly</behavior><field>Received_Count__c</field></layoutItems></layoutColumns><style>TwoColumnsTopToBottom</style></layoutSections>
+<relatedLists><fields>NAME</fields><fields>Direction__c</fields><fields>Packet__c</fields><relatedList>WFC27_Trip_Packet__c.Trip__c</relatedList></relatedLists>
+<showEmailCheckbox>false</showEmailCheckbox><showHighlightsPanel>true</showHighlightsPanel><showInteractionLogPanel>false</showInteractionLogPanel><showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox><showSubmitAndAttachButton>false</showSubmitAndAttachButton>
+</Layout>

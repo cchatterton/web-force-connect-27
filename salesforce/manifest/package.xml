@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types><members>WFC27_Admin</members><members>WFC27_Engine</members><members>WFC27_Scheduler</members><members>WFC27_Sender</members><members>WFC27_TransportTest</members><name>ApexClass</name></types>
-    <types><members>WFC27_Station__c.Envelope_ID__c</members><members>WFC27_Station__c.Payload__c</members><members>WFC27_Station__c.Status__c</members><members>WFC27_Settings__c.Batch_Size__c</members><members>WFC27_Settings__c.Last_Error__c</members><members>WFC27_Settings__c.Last_Tick_At__c</members><members>WFC27_Settings__c.Train_Paused__c</members><members>WFC27_Trip__c.Sent_Count__c</members><members>WFC27_Trip__c.Received_Count__c</members><members>WFC27_Trip__c.Result__c</members><members>WFC27_Trip__c.Error__c</members><name>CustomField</name></types>
-    <types><members>WFC27_Station__c</members><members>WFC27_Settings__c</members><members>WFC27_Trip__c</members><name>CustomObject</name></types>
+    <types><members>WFC27_Station__c.Envelope_ID__c</members><members>WFC27_Station__c.Payload__c</members><members>WFC27_Station__c.Status__c</members><members>WFC27_Settings__c.Batch_Size__c</members><members>WFC27_Settings__c.Last_Error__c</members><members>WFC27_Settings__c.Last_Tick_At__c</members><members>WFC27_Settings__c.Train_Paused__c</members><members>WFC27_Trip__c.Sent_Count__c</members><members>WFC27_Trip__c.Received_Count__c</members><members>WFC27_Trip__c.Result__c</members><members>WFC27_Trip__c.Error__c</members><members>WFC27_Trip_Packet__c.Trip__c</members><members>WFC27_Trip_Packet__c.Packet__c</members><members>WFC27_Trip_Packet__c.Direction__c</members><name>CustomField</name></types>
+    <types><members>WFC27_Station__c</members><members>WFC27_Settings__c</members><members>WFC27_Trip__c</members><members>WFC27_Trip_Packet__c</members><name>CustomObject</name></types>
     <types><members>WFC27_Manage</members><name>CustomPermission</name></types>
-    <types><members>WFC27_Console</members><members>WFC27_Station__c</members><name>CustomTab</name></types>
-    <types><members>WFC27_Station__c-WFC27 Station Layout</members><name>Layout</name></types>
+    <types><members>WFC27_Console</members><members>WFC27_Station__c</members><members>WFC27_Trip__c</members><name>CustomTab</name></types>
+    <types><members>WFC27_Station__c-WFC27 Station Layout</members><members>WFC27_Trip__c-WFC27 Sync Layout</members><members>WFC27_Trip_Packet__c-WFC27 Sync Packet Layout</members><name>Layout</name></types>
     <types><members>WFC27_StationTrigger</members><name>ApexTrigger</name></types>
     <types><members>wfc27Console</members><name>LightningComponentBundle</name></types>
     <types><members>WFC27_Admin</members><name>PermissionSet</name></types>

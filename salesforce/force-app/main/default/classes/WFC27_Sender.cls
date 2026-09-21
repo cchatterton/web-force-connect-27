@@ -58,7 +58,16 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
             if (!sentOutbound.isEmpty()) update sentOutbound;
             if (!inbound.isEmpty()) update inbound;
             if (settings.Last_Error__c != null) { settings.Last_Error__c = null; update settings; }
-            insert new WFC27_Trip__c(Sent_Count__c=sentOutbound.size(), Received_Count__c=arrived.size(), Result__c='Delivered');
+            WFC27_Trip__c trip = new WFC27_Trip__c(Sent_Count__c=sentOutbound.size(), Received_Count__c=arrived.size(), Result__c='Delivered');
+            insert trip;
+            List<WFC27_Trip_Packet__c> members = new List<WFC27_Trip_Packet__c>();
+            for (WFC27_Station__c row : sentOutbound) members.add(new WFC27_Trip_Packet__c(Trip__c=trip.Id, Packet__c=row.Id, Direction__c='Sent'));
+            Set<String> arrivedIds = new Set<String>();
+            for (Object value : arrived) arrivedIds.add('wp:' + String.valueOf(((Map<String,Object>) value).get('id')));
+            if (!arrivedIds.isEmpty()) for (WFC27_Station__c row : [SELECT Id FROM WFC27_Station__c WHERE Envelope_ID__c IN :arrivedIds]) {
+                members.add(new WFC27_Trip_Packet__c(Trip__c=trip.Id, Packet__c=row.Id, Direction__c='Received'));
+            }
+            if (!members.isEmpty()) insert members;
         } catch (Exception error) {
             settings.Last_Error__c = error.getMessage().left(32768);
             update settings;

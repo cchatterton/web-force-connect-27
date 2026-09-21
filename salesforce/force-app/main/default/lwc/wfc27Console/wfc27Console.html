@@ -23,12 +23,6 @@
           <lightning-combobox label="Hour (UTC)" value={tripHour} options={tripHours} onchange={changeTripHour}></lightning-combobox>
         </div>
         <lightning-datatable key-field="Id" data={trips} columns={tripColumns} hide-checkbox-column></lightning-datatable>
-        <h2 class="slds-text-heading_small slds-m-top_large">Station</h2>
-        <p>WFC27 stores raw payloads here. No record processing runs in this package.</p>
-        <p><a href="/lightning/o/WFC27_Station__c/list">Open Station Items</a></p>
-        <lightning-datatable key-field="Id" data={status.station} columns={stationColumns} hide-checkbox-column></lightning-datatable>
-        <lightning-textarea label="Stage outbound payload for a train test" value={json} onchange={changeJson}></lightning-textarea>
-        <lightning-button label="Stage payload" onclick={stageJson} class="slds-m-top_small"></lightning-button>
       </template>
     </div>
   </lightning-card>
