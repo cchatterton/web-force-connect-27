@@ -16,6 +16,13 @@
                 <div class="heartbeat-fill" style={heartbeatStyle}></div>
               </div>
             </section>
+            <h2 class="slds-text-heading_small slds-m-top_medium">Recent train trips</h2>
+            <div class="trip-filters">
+              <lightning-combobox label="Show" value={tripPeriod} options={tripPeriods} onchange={changeTripPeriod}></lightning-combobox>
+              <lightning-input type="date" label="Date (UTC)" value={tripDay} onchange={changeTripDay}></lightning-input>
+              <lightning-combobox label="Hour (UTC)" value={tripHour} options={tripHours} onchange={changeTripHour}></lightning-combobox>
+            </div>
+            <lightning-datatable key-field="Id" data={trips} columns={tripColumns} hide-checkbox-column></lightning-datatable>
             <p>Waiting: {status.waiting} · Packet errors: {status.errors}</p>
             <template if:true={status.lastError}><p class="slds-text-color_error" role="alert">Last transport error: {status.lastError}</p></template>
             <p>Average content wait: {status.averageWaitSeconds} seconds (latest 100 completed)</p>
@@ -32,24 +39,29 @@
         </lightning-tab>
         <lightning-tab label="Object bindings" onactive={showObjects}>
           <p class="slds-m-bottom_small">Add objects now; each starts syncing only when it is active and has a WFC27_Eligible__c checkbox or checkbox formula. In Object Manager, enter Field Name WFC27_Eligible; Salesforce adds __c. The field decides which records qualify.</p>
-          <lightning-datatable key-field="bindingId" data={configuredBindings} columns={objectColumns} onrowaction={editObjectRule} hide-checkbox-column></lightning-datatable>
-          <h3 class="slds-text-heading_small slds-m-top_medium slds-m-bottom_small">{objectFormTitle}</h3>
-          <lightning-input type="search" label="Find Salesforce object" value={objectSearch} oninput={changeObjectSearch}></lightning-input>
-          <div class="binding-form-grid">
-            <lightning-combobox label="Salesforce object" options={objectOptions} value={selectedObject} onchange={chooseObject}></lightning-combobox>
-            <lightning-input label="WordPress post type" value={postType} onchange={changePostType}></lightning-input>
-            <lightning-combobox label="Status when eligible" options={statusOptions} value={eligibleStatus} onchange={changeEligibleStatus}></lightning-combobox>
-          </div>
+          <div class="binding-table-scroll"><table class="slds-table slds-table_bordered slds-table_cell-buffer binding-table">
+            <thead><tr><th scope="col">Salesforce object</th><th scope="col">WordPress post type</th><th scope="col">Eligible status</th><th scope="col">Eligibility field</th><th scope="col">Active</th><th scope="col">Draft days</th><th scope="col">Bin days</th><th scope="col">Action</th></tr></thead>
+            <tbody>
+              <template for:each={configuredBindings} for:item="binding">
+                <tr key={binding.bindingId}><td>{binding.displayName}</td><td>{binding.postType}</td><td>{binding.eligibleStatus}</td><td>{binding.eligibilityLabel}</td><td>{binding.syncLabel}</td><td>{binding.draftDays}</td><td>{binding.binDays}</td><td><lightning-button label="Edit" data-api={binding.api} onclick={editObjectRule} variant="base"></lightning-button></td></tr>
+              </template>
+              <tr><td><div class="object-search-cell">
+                <lightning-input type="search" variant="label-hidden" label="Salesforce object" placeholder="Start typing an object" value={objectSearch} oninput={changeObjectSearch} onfocus={focusObjectSearch}></lightning-input>
+                <template if:true={objectSuggestionsOpen}><div class="object-suggestions" role="listbox"><template for:each={objectSuggestions} for:item="option"><button key={option.value} type="button" class="object-suggestion" data-api={option.value} onclick={selectObjectSuggestion} role="option">{option.label}</button></template></div></template>
+              </div></td>
+              <td><lightning-input label="WordPress post type" variant="label-hidden" value={postType} onchange={changePostType}></lightning-input></td>
+              <td><lightning-combobox label="Status when eligible" variant="label-hidden" options={statusOptions} value={eligibleStatus} onchange={changeEligibleStatus}></lightning-combobox></td>
+              <td><template if:true={selectedRow}>{selectedRow.hasFlag}</template></td>
+              <td><lightning-input type="checkbox" label="Active" checked={active} onchange={changeActive}></lightning-input></td>
+              <td><lightning-input type="number" label="Draft retention days" variant="label-hidden" min="0" value={draftDays} onchange={changeDraft}></lightning-input></td>
+              <td><lightning-input type="number" label="Bin retention days" variant="label-hidden" min="0" value={binDays} onchange={changeBin}></lightning-input></td>
+              <td><lightning-button label="Save" variant="brand" onclick={saveObjectRule} disabled={saveDisabled}></lightning-button></td></tr>
+            </tbody>
+          </table></div>
           <template if:true={selectedRow}>
             <template if:false={selectedRow.hasFlag}><p class="slds-text-color_error slds-m-top_small">This object has no WFC27_Eligible__c checkbox yet. Use Field Name WFC27_Eligible in Object Manager; do not enter the __c suffix. You can save the binding, but it will not sync until the field exists.</p></template>
             <template if:true={nearEligibilityField}><p class="slds-text-color_error">Found {nearEligibilityField} on this object. Its API name differs from WFC27_Eligible__c.</p></template>
-            <div class="binding-form-grid binding-form-grid-secondary">
-              <lightning-input type="checkbox" label="Active — sync when eligible" checked={active} onchange={changeActive}></lightning-input>
-              <lightning-input type="number" label="Draft retention days" min="0" value={draftDays} onchange={changeDraft}></lightning-input>
-              <lightning-input type="number" label="Bin retention days" min="0" value={binDays} onchange={changeBin}></lightning-input>
-            </div>
-            <lightning-button label="Save object binding" variant="brand" onclick={saveObjectRule} disabled={saveDisabled}></lightning-button>
-            <lightning-button label="Queue base sync" onclick={queueBaseSync} disabled={baseDisabled} class="slds-m-left_small"></lightning-button>
+            <lightning-button label="Queue base sync" onclick={queueBaseSync} disabled={baseDisabled} class="slds-m-top_small"></lightning-button>
           </template>
         </lightning-tab>
         <lightning-tab label="Field bindings" onactive={showFields}>

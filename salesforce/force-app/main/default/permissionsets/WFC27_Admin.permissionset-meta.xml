@@ -243,6 +243,11 @@
     <field>WFC27_Settings__c.Train_Paused__c</field>
     <readable>true</readable>
   </fieldPermissions>
+  <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Packet_ID__c</field><readable>true</readable></fieldPermissions>
+  <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Post_Count__c</field><readable>true</readable></fieldPermissions>
+  <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Meta_Count__c</field><readable>true</readable></fieldPermissions>
+  <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Result__c</field><readable>true</readable></fieldPermissions>
+  <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Error__c</field><readable>true</readable></fieldPermissions>
   <label>WFC27 Administrator</label>
   <objectPermissions>
     <allowCreate>true</allowCreate>
@@ -307,6 +312,7 @@
     <object>WFC27_Deletion_Ack__c</object>
     <viewAllRecords>true</viewAllRecords>
   </objectPermissions>
+  <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>WFC27_Trip__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
   <tabSettings>
     <tab>WFC27_Console</tab>
     <visibility>Visible</visibility>

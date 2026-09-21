@@ -13,12 +13,27 @@ function wfc27_identity_table() {
 	return $wpdb->prefix . 'wfc27_identity';
 }
 
+function wfc27_trips_table() {
+	global $wpdb;
+	return $wpdb->prefix . 'wfc27_trips';
+}
+
 function wfc27_create_tables() {
 	global $wpdb;
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 	$charset = $wpdb->get_charset_collate();
 	$packets = wfc27_packets_table();
 	$identity = wfc27_identity_table();
+	$trips = wfc27_trips_table();
+	dbDelta( "CREATE TABLE {$trips} (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		packet_id varchar(80) NOT NULL DEFAULT '',
+		post_count int(11) NOT NULL DEFAULT 0,
+		meta_count int(11) NOT NULL DEFAULT 0,
+		received_at datetime NOT NULL,
+		PRIMARY KEY  (id),
+		KEY received_at (received_at)
+	) {$charset};" );
 	dbDelta( "CREATE TABLE {$packets} (
 		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 		packet_id varchar(80) NOT NULL,

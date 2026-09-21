@@ -54,6 +54,7 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
             processResults(result);
             WFC27_Settings__c healthy = WFC27_Engine.settings();
             if (healthy.Last_Error__c != null) { healthy.Last_Error__c = null; update healthy; }
+            recordTrip(body, packet, 'Delivered', null);
         } catch (Exception error) {
             if (packet != null) { packet.Status__c = receiptConfirmed ? 'received' : 'error'; packet.Error__c = error.getMessage().left(32768); update packet; }
             else {
@@ -61,7 +62,16 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
                 settings.Last_Error__c = error.getMessage().left(32768);
                 update settings;
             }
+            recordTrip(body, packet, 'Failed', error.getMessage());
         }
+    }
+
+    private static void recordTrip(Map<String,Object> body, WFC27_Packet__c packet, String result, String error) {
+        List<Object> posts = (List<Object>) body.get('posts');
+        List<Object> meta = (List<Object>) body.get('postmeta');
+        insert new WFC27_Trip__c(Packet_ID__c=packet == null ? null : String.valueOf(packet.Id),
+            Post_Count__c=posts == null ? 0 : posts.size(), Meta_Count__c=meta == null ? 0 : meta.size(),
+            Result__c=result, Error__c=error == null ? null : error.left(255));
     }
 
     private static void processResults(Map<String,Object> result) {

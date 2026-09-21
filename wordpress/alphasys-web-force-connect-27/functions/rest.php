@@ -53,6 +53,15 @@ function wfc27_receive_train( WP_REST_Request $request ) {
 		update_option( 'wfc27_train_state', $payload['summary']['train_state'], false );
 	}
 	update_option( 'wfc27_last_heartbeat', current_time( 'mysql', true ), false );
+	$wpdb->insert( wfc27_trips_table(), array(
+		'packet_id' => $packet_id,
+		'post_count' => count( $payload['posts'] ),
+		'meta_count' => count( $payload['postmeta'] ),
+		'received_at' => current_time( 'mysql', true ),
+	), array( '%s', '%d', '%d', '%s' ) );
+	if ( wp_rand( 1, 60 ) === 1 ) {
+		$wpdb->query( 'DELETE FROM ' . wfc27_trips_table() . ' WHERE received_at < UTC_TIMESTAMP() - INTERVAL 30 DAY' );
+	}
 	$response = wfc27_pending_results( $packet_id );
 	$response['summary'] = array( 'received_packet_id' => $packet_id );
 	return rest_ensure_response( $response );

@@ -5,6 +5,10 @@
 	const label = document.getElementById('wfc27-heartbeat-label');
 	const countdown = document.getElementById('wfc27-train-countdown');
 	const counts = document.getElementById('wfc27-queue-counts');
+	const tripRows = document.getElementById('wfc27-trip-rows');
+	const tripFilter = document.getElementById('wfc27-trip-filter');
+	const tripDay = document.getElementById('wfc27-trip-day');
+	const tripHour = document.getElementById('wfc27-trip-hour');
 	let last = bar.dataset.last ? Date.parse(bar.dataset.last) : NaN;
 	let state = bar.dataset.state;
 
@@ -33,7 +37,7 @@
 	}
 
 	async function refresh() {
-		const data = new URLSearchParams({ action: 'wfc27_status', nonce: wfc27Status.nonce });
+		const data = new URLSearchParams({ action: 'wfc27_status', nonce: wfc27Status.nonce, trip_filter: tripFilter.value, trip_day: tripDay.value, trip_hour: tripHour.value });
 		try {
 			const response = await fetch(wfc27Status.url, { method: 'POST', credentials: 'same-origin', body: data, cache: 'no-store' });
 			if (!response.ok) return;
@@ -42,11 +46,24 @@
 			last = result.data.last ? Date.parse(result.data.last) : NaN;
 			state = result.data.state;
 			counts.textContent = result.data.counts;
+			tripRows.replaceChildren();
+			if (!result.data.trips.length) {
+				const row = tripRows.insertRow();
+				row.insertCell().colSpan = 4;
+				row.cells[0].textContent = 'No trips in this period.';
+			} else {
+				for (const trip of result.data.trips) {
+					const row = tripRows.insertRow();
+					for (const value of [trip.received_at, trip.packet_id || 'Empty packet', trip.post_count, trip.meta_count]) row.insertCell().textContent = String(value);
+				}
+			}
 			render();
 		} catch (_) { /* Keep the last known heartbeat visible. */ }
 	}
 
 	render();
+	for (const control of [tripFilter, tripDay, tripHour]) control.addEventListener('change', refresh);
+	refresh();
 	window.setInterval(render, 250);
 	window.setInterval(refresh, 10000);
 })();

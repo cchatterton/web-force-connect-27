@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AlphaSys Web Force Connect 27
  * Description: Receives Salesforce content packets and maintains their WordPress posts.
- * Version: 0.1.3
+ * Version: 0.1.4
  * Author: AlphaSys
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WFC27_VERSION', '0.1.3' );
+define( 'WFC27_VERSION', '0.1.4' );
 define( 'WFC27_FILE', __FILE__ );
 define( 'WFC27_DIR', plugin_dir_path( __FILE__ ) );
 

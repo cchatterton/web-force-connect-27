@@ -129,6 +129,21 @@ public with sharing class WFC27_Admin {
     }
 
     @AuraEnabled
+    public static List<WFC27_Trip__c> trips(String period, String day, Integer hour) {
+        requireManage();
+        Datetime finish = System.now();
+        Datetime start = finish.addHours(period == 'day' ? -24 : -1);
+        if ((period == 'date' || period == 'date_hour') && String.isNotBlank(day)) {
+            Date selected = Date.valueOf(day);
+            Integer selectedHour = period == 'date_hour' && hour != null && hour >= 0 && hour < 24 ? hour : 0;
+            start = Datetime.newInstanceGmt(selected.year(), selected.month(), selected.day(), selectedHour, 0, 0);
+            finish = period == 'date_hour' ? start.addHours(1) : start.addDays(1);
+        }
+        return [SELECT Id, CreatedDate, Packet_ID__c, Post_Count__c, Meta_Count__c, Result__c, Error__c
+            FROM WFC27_Trip__c WHERE CreatedDate >= :start AND CreatedDate < :finish ORDER BY CreatedDate DESC LIMIT 120];
+    }
+
+    @AuraEnabled
     public static void setBatchSize(Integer size) {
         requireManage();
         if (size == null || size < 1 || size > 100) throw new AuraHandledException('Batch size must be from 1 to 100.');

@@ -19,6 +19,13 @@ function wfc27_cron_schedules( $schedules ) {
 }
 
 add_action( 'init', 'wfc27_schedule_worker' );
+add_action( 'init', 'wfc27_maybe_upgrade_tables', 5 );
+function wfc27_maybe_upgrade_tables() {
+	if ( get_option( 'wfc27_schema_version' ) !== WFC27_VERSION ) {
+		wfc27_create_tables();
+		update_option( 'wfc27_schema_version', WFC27_VERSION, false );
+	}
+}
 function wfc27_schedule_worker() {
 	if ( ! wp_next_scheduled( 'wfc27_process_inbox' ) ) {
 		wp_schedule_event( time() + MINUTE_IN_SECONDS, 'wfc27_minute', 'wfc27_process_inbox' );

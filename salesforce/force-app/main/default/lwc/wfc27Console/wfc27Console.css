@@ -46,6 +46,25 @@
   align-items: end;
 }
 
+.trip-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  max-width: 50rem;
+  margin: 0.5rem 0;
+}
+
+.object-search-cell { position: relative; min-width: 0; }
+.object-suggestions { position: absolute; z-index: 10; top: 100%; left: 0; right: 0; max-height: 16rem; overflow-y: auto; background: white; border: 1px solid #dddbda; box-shadow: 0 2px 8px #0002; }
+.object-suggestion { display: block; width: 100%; padding: 0.4rem 0.6rem; text-align: left; background: white; border: 0; cursor: pointer; }
+.object-suggestion:hover, .object-suggestion:focus { background: #eef4ff; }
+.binding-table-scroll { overflow-x: auto; }
+.binding-table { min-width: 75rem; table-layout: fixed; }
+.binding-table th:first-child, .binding-table td:first-child { width: 17rem; }
+.binding-table th:nth-child(2), .binding-table td:nth-child(2) { width: 12rem; }
+.binding-table th:nth-child(3), .binding-table td:nth-child(3) { width: 11rem; }
+.binding-table th:nth-child(6), .binding-table td:nth-child(6), .binding-table th:nth-child(7), .binding-table td:nth-child(7) { width: 7rem; }
+
 .binding-form-grid-secondary {
   margin: 0.75rem 0;
 }

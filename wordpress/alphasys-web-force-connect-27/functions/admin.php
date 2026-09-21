@@ -32,6 +32,19 @@ function wfc27_admin_ajax_status() {
 	$last = get_option( 'wfc27_last_heartbeat', '' );
 	$counts = $wpdb->get_results( 'SELECT status, COUNT(*) AS total FROM ' . wfc27_packets_table() . ' GROUP BY status', ARRAY_A );
 	$parts = array();
+	$filter = isset( $_POST['trip_filter'] ) ? sanitize_key( wp_unslash( $_POST['trip_filter'] ) ) : 'hour';
+	$day = isset( $_POST['trip_day'] ) ? sanitize_text_field( wp_unslash( $_POST['trip_day'] ) ) : '';
+	$hour = isset( $_POST['trip_hour'] ) ? absint( wp_unslash( $_POST['trip_hour'] ) ) : 0;
+	$since = 'day' === $filter ? gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) : gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS );
+	$until = gmdate( 'Y-m-d H:i:s' );
+	if ( 'date' === $filter && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $day ) ) {
+		$since = $day . ' 00:00:00';
+		$until = gmdate( 'Y-m-d H:i:s', strtotime( $since . ' UTC' ) + DAY_IN_SECONDS );
+	} elseif ( 'date_hour' === $filter && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $day ) && $hour < 24 ) {
+		$since = $day . ' ' . sprintf( '%02d', $hour ) . ':00:00';
+		$until = gmdate( 'Y-m-d H:i:s', strtotime( $since . ' UTC' ) + HOUR_IN_SECONDS );
+	}
+	$trips = $wpdb->get_results( $wpdb->prepare( 'SELECT id,packet_id,post_count,meta_count,received_at FROM ' . wfc27_trips_table() . ' WHERE received_at >= %s AND received_at < %s ORDER BY id DESC LIMIT 120', $since, $until ), ARRAY_A );
 	foreach ( $counts as $count ) {
 		$parts[] = ucfirst( $count['status'] ) . ': ' . $count['total'];
 	}
@@ -39,6 +52,7 @@ function wfc27_admin_ajax_status() {
 		'last' => $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : null,
 		'state' => get_option( 'wfc27_train_state', 'running' ),
 		'counts' => implode( ' · ', $parts ),
+		'trips' => $trips,
 	) );
 }
 function wfc27_admin_save_receiver() {
@@ -90,6 +104,13 @@ function wfc27_render_admin_page() {
 			<p id="wfc27-heartbeat-label" aria-live="polite">Waiting for train status</p>
 			<div class="wfc27-heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-state="<?php echo esc_attr( get_option( 'wfc27_train_state', 'running' ) ); ?>" data-last="<?php echo esc_attr( $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : '' ); ?>"><div class="wfc27-heartbeat-fill"></div></div>
 		</section>
+		<h2>Recent train trips</h2>
+		<div class="wfc27-trip-filters">
+			<label>Show <select id="wfc27-trip-filter"><option value="hour">Last hour</option><option value="day">Last 24 hours</option><option value="date">Day (UTC)</option><option value="date_hour">Hour in day (UTC)</option></select></label>
+			<label>Date <input id="wfc27-trip-day" type="date" value="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>"></label>
+			<label>Hour <select id="wfc27-trip-hour"><?php for ( $hour = 0; $hour < 24; $hour++ ) : ?><option value="<?php echo esc_attr( (string) $hour ); ?>"><?php echo esc_html( sprintf( '%02d:00', $hour ) ); ?></option><?php endfor; ?></select></label>
+		</div>
+		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Packet</th><th>Posts</th><th>Meta</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="4">Loading trips…</td></tr></tbody></table>
 		<table class="widefat striped"><tbody>
 		<tr><th>Receive endpoint</th><td><code><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></td></tr>
 		<tr><th>Mapped posts</th><td><?php echo esc_html( (string) $mapped ); ?></td></tr>

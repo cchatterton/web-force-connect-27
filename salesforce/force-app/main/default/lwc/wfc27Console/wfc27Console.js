@@ -2,6 +2,7 @@ import { LightningElement, track } from 'lwc';
 import objects from '@salesforce/apex/WFC27_Admin.objects';
 import fields from '@salesforce/apex/WFC27_Admin.fields';
 import status from '@salesforce/apex/WFC27_Admin.status';
+import getTrips from '@salesforce/apex/WFC27_Admin.trips';
 import saveObject from '@salesforce/apex/WFC27_Admin.saveObject';
 import saveField from '@salesforce/apex/WFC27_Admin.saveField';
 import setBatchSize from '@salesforce/apex/WFC27_Admin.setBatchSize';
@@ -36,6 +37,16 @@ export default class Wfc27Console extends LightningElement {
   activeTab = 'transport';
   objectOptionsList = [];
   objectSearch = '';
+  objectSuggestionsOpen = false;
+  @track trips = [];
+  tripPeriod = 'hour';
+  tripDay = new Date().toISOString().slice(0, 10);
+  tripHour = new Date().getUTCHours();
+  tripPeriods = [{ label: 'Last hour', value: 'hour' }, { label: 'Last 24 hours', value: 'day' }, { label: 'Day (UTC)', value: 'date' }, { label: 'Hour in day (UTC)', value: 'date_hour' }];
+  tripHours = Array.from({ length: 24 }, (_, hour) => ({ label: `${String(hour).padStart(2, '0')}:00`, value: String(hour) }));
+  tripColumns = [{ label: 'Departed', fieldName: 'CreatedDate', type: 'date', typeAttributes: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' } },
+    { label: 'Packet', fieldName: 'packetLabel' }, { label: 'Posts', fieldName: 'Post_Count__c', type: 'number' },
+    { label: 'Meta', fieldName: 'Meta_Count__c', type: 'number' }, { label: 'Result', fieldName: 'Result__c' }, { label: 'Error', fieldName: 'Error__c' }];
   @track journeyData;
   packetColumns = [
     { label: 'Packet', fieldName: 'Id' },
@@ -70,21 +81,28 @@ export default class Wfc27Console extends LightningElement {
   }
   disconnectedCallback() { window.clearInterval(this.heartbeatTimer); window.clearInterval(this.progressTimer); }
   async refresh() {
-    try { [this.rows, this.status] = await Promise.all([objects(), status()]); this.updateObjectOptions(); this.updateHeartbeatProgress(); this.error = null; }
+    try { [this.rows, this.status] = await Promise.all([objects(), status()]); this.updateObjectOptions(); this.updateHeartbeatProgress(); await this.refreshTrips(); this.error = null; }
     catch (error) { this.error = error.body?.message || error.message; }
   }
   async refreshTransport() {
     if (!this.transportVisible) return;
-    try { this.status = await status(); this.updateHeartbeatProgress(); this.error = null; }
+    try { this.status = await status(); this.updateHeartbeatProgress(); await this.refreshTrips(); this.error = null; }
     catch (error) { this.error = error.body?.message || error.message; }
   }
   showTransport() { this.activeTab = 'transport'; this.transportVisible = true; this.refreshTransport(); }
   showObjects() { this.activeTab = 'objects'; this.transportVisible = false; this.refreshSelectedFields(); }
   showFields() { this.activeTab = 'fields'; this.transportVisible = false; }
+  async refreshTrips() {
+    const rows = await getTrips({ period: this.tripPeriod, day: this.tripDay, hour: Number(this.tripHour) });
+    this.trips = rows.map(row => ({ ...row, packetLabel: row.Packet_ID__c || 'Empty packet' }));
+  }
+  changeTripPeriod(event) { this.tripPeriod = event.detail.value; this.refreshTrips(); }
+  changeTripDay(event) { this.tripDay = event.detail.value; this.refreshTrips(); }
+  changeTripHour(event) { this.tripHour = event.detail.value; this.refreshTrips(); }
   updateObjectOptions() {
     const query = this.objectSearch.trim().toLowerCase();
     const matches = this.rows.filter(row => (!row.bindingId || row.api === this.selectedObject) &&
-      (!query || row.api === this.selectedObject || row.label.toLowerCase().includes(query) || row.api.toLowerCase().includes(query)));
+      (!query || row.label.toLowerCase().includes(query) || row.api.toLowerCase().includes(query)));
     if (query) matches.sort((a, b) => Number(b.label.toLowerCase().startsWith(query)) - Number(a.label.toLowerCase().startsWith(query)) || a.label.localeCompare(b.label));
     this.objectOptionsList = (query ? matches.slice(0, 50) : matches).map(row => ({ label: `${row.label} (${row.api})`, value: row.api }));
   }
@@ -102,7 +120,7 @@ export default class Wfc27Console extends LightningElement {
   get trainStateLabel() { return this.status?.trainPaused ? 'Paused' : !this.status?.lastTrain ? 'Ready to start' : this.heartbeatPercent >= 100 ? 'Train due' : 'Running'; }
   get trainControlIcon() { return this.status?.trainPaused || !this.status?.lastTrain ? 'utility:play' : 'utility:pause'; }
   get trainControlLabel() { return this.status?.trainPaused || !this.status?.lastTrain ? 'Play sync train' : 'Pause sync train'; }
-  get objectOptions() { return this.objectOptionsList; }
+  get objectSuggestions() { return this.objectSuggestionsOpen ? this.objectOptionsList.slice(0, 20) : []; }
   get configuredBindings() { return this.rows.filter(row => row.bindingId).map(row => ({ ...row,
     displayName: `${row.label} (${row.api})`,
     eligibilityLabel: row.hasFlag ? 'Present' : 'Missing',
@@ -117,6 +135,9 @@ export default class Wfc27Console extends LightningElement {
   get fieldSaveDisabled() { return !this.bindingId || !this.sourceField || !this.wpKey; }
   async chooseObject(event) {
     this.selectedObject = event.detail.value;
+    this.objectSuggestionsOpen = false;
+    const selected = this.rows.find(row => row.api === this.selectedObject);
+    this.objectSearch = selected ? `${selected.label} (${selected.api})` : '';
     this.updateObjectOptions();
     const row = this.selectedRow;
     this.bindingId = row.bindingId;
@@ -146,11 +167,11 @@ export default class Wfc27Console extends LightningElement {
       this.error = null;
     } catch (error) { this.error = error.body?.message || error.message; }
   }
-  async editObjectRule(event) {
-    if (event.detail.action.name === 'edit') await this.chooseObject({ detail: { value: event.detail.row.api } });
-  }
+  async editObjectRule(event) { await this.chooseObject({ detail: { value: event.currentTarget.dataset.api } }); }
   changePostType(event) { this.postType = event.detail.value; }
-  changeObjectSearch(event) { this.objectSearch = event.target.value || ''; this.updateObjectOptions(); }
+  changeObjectSearch(event) { this.objectSearch = event.target.value || ''; this.objectSuggestionsOpen = true; this.updateObjectOptions(); }
+  focusObjectSearch() { this.objectSuggestionsOpen = true; this.updateObjectOptions(); }
+  selectObjectSuggestion(event) { this.chooseObject({ detail: { value: event.currentTarget.dataset.api } }); }
   changeEligibleStatus(event) { this.eligibleStatus = event.detail.value; }
   changeActive(event) { this.active = event.detail.checked; }
   changeDraft(event) { this.draftDays = event.detail.value; }
