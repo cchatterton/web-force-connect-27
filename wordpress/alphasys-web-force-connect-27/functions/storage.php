@@ -15,13 +15,12 @@ function wfc27_trips_table() {
 
 function wfc27_stage_outbound( $json ) {
 	global $wpdb;
-	$payload = is_string( $json ) ? json_decode( $json, true ) : $json;
-	$encoded = is_array( $payload ) ? wp_json_encode( $payload ) : false;
-	if ( ! $encoded || strlen( $encoded ) > 120000 ) {
-		return new WP_Error( 'wfc27_invalid_json', 'A station item needs a JSON object of at most 120 KB.' );
+	$payload = is_string( $json ) ? $json : (string) $json;
+	if ( strlen( $payload ) > 120000 ) {
+		return new WP_Error( 'wfc27_payload_size', 'A station payload cannot exceed 120 KB.' );
 	}
 	$id = wp_generate_uuid4();
-	$stored = $wpdb->insert( wfc27_station_table(), array( 'envelope_id' => $id, 'json' => $encoded, 'status' => 'outbound_ready' ), array( '%s', '%s', '%s' ) );
+	$stored = $wpdb->insert( wfc27_station_table(), array( 'envelope_id' => $id, 'json' => $payload, 'status' => 'outbound_ready' ), array( '%s', '%s', '%s' ) );
 	return $stored ? $id : new WP_Error( 'wfc27_station_error', 'Could not stage the envelope.' );
 }
 

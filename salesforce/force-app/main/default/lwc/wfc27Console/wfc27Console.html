@@ -11,8 +11,8 @@
           <div class="train-countdown" aria-live="off">{heartbeatCountdown}</div>
           <p class="train-state" aria-live="polite">{trainStateLabel}</p>
           <div class="heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow={heartbeatPercent}><div class="heartbeat-fill" style={heartbeatStyle}></div></div>
+          <p>Items waiting to send: {status.waiting}</p>
         </section>
-        <p>Outbound items waiting: {status.waiting}</p>
         <template if:true={status.lastError}><p class="slds-text-color_error" role="alert">Last transport error: {status.lastError}</p></template>
         <lightning-input type="number" label="Items per train" min="1" max="100" value={status.batchSize} onchange={changeBatch}></lightning-input>
         <lightning-button label="Save train capacity" onclick={saveBatch} class="slds-m-top_small"></lightning-button>
@@ -24,10 +24,10 @@
         </div>
         <lightning-datatable key-field="Id" data={trips} columns={tripColumns} hide-checkbox-column></lightning-datatable>
         <h2 class="slds-text-heading_small slds-m-top_large">Station</h2>
-        <p>WFC27 stores JSON here. No record processing runs in this package.</p>
+        <p>WFC27 stores raw payloads here. No record processing runs in this package.</p>
         <lightning-datatable key-field="Id" data={status.station} columns={stationColumns} hide-checkbox-column></lightning-datatable>
-        <lightning-textarea label="Stage outbound JSON for a train test" value={json} onchange={changeJson}></lightning-textarea>
-        <lightning-button label="Stage JSON" onclick={stageJson} class="slds-m-top_small"></lightning-button>
+        <lightning-textarea label="Stage outbound payload for a train test" value={json} onchange={changeJson}></lightning-textarea>
+        <lightning-button label="Stage payload" onclick={stageJson} class="slds-m-top_small"></lightning-button>
       </template>
     </div>
   </lightning-card>

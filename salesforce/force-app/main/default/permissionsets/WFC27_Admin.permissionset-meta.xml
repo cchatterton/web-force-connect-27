@@ -21,4 +21,5 @@
   <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Result__c</field><readable>true</readable></fieldPermissions>
   <fieldPermissions><editable>true</editable><field>WFC27_Trip__c.Error__c</field><readable>true</readable></fieldPermissions>
   <tabSettings><tab>WFC27_Console</tab><visibility>Visible</visibility></tabSettings>
+  <tabSettings><tab>WFC27_Station__c</tab><visibility>Visible</visibility></tabSettings>
 </PermissionSet>

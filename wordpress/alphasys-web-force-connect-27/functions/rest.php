@@ -23,20 +23,20 @@ function wfc27_receive_train( WP_REST_Request $request ) {
 		return new WP_Error( 'wfc27_train_size', 'Train exceeds 2 MB.', array( 'status' => 413 ) );
 	}
 	$data = $request->get_json_params();
-	if ( ! is_array( $data ) || ( $data['protocol'] ?? '' ) !== 'wfc27.station.v1' || ! isset( $data['envelopes'], $data['receipts'] ) || ! is_array( $data['envelopes'] ) || ! is_array( $data['receipts'] ) || count( $data['envelopes'] ) > 100 || count( $data['receipts'] ) > 100 ) {
+	if ( ! is_array( $data ) || ( $data['protocol'] ?? '' ) !== 'wfc27.station.v2' || ! isset( $data['envelopes'], $data['receipts'] ) || ! is_array( $data['envelopes'] ) || ! is_array( $data['receipts'] ) || count( $data['envelopes'] ) > 100 || count( $data['receipts'] ) > 100 ) {
 		return new WP_Error( 'wfc27_invalid_train', 'Invalid station train.', array( 'status' => 400 ) );
 	}
 	$capacity = max( 1, min( 100, (int) ( $data['capacity'] ?? 25 ) ) );
 	$incoming = array();
 	foreach ( $data['envelopes'] as $envelope ) {
-		if ( ! is_array( $envelope ) || ! preg_match( '/^[A-Za-z0-9]{15,18}$/', (string) ( $envelope['id'] ?? '' ) ) || ! isset( $envelope['payload'] ) || ! is_array( $envelope['payload'] ) ) {
+		if ( ! is_array( $envelope ) || ! preg_match( '/^[A-Za-z0-9]{15,18}$/', (string) ( $envelope['id'] ?? '' ) ) || ! isset( $envelope['payload'] ) || ! is_string( $envelope['payload'] ) ) {
 			return new WP_Error( 'wfc27_invalid_envelope', 'Invalid station envelope.', array( 'status' => 400 ) );
 		}
-		$json = wp_json_encode( $envelope['payload'] );
-		if ( ! $json || strlen( $json ) > 120000 ) {
-			return new WP_Error( 'wfc27_invalid_envelope', 'Envelope JSON is too large.', array( 'status' => 400 ) );
+		$payload = $envelope['payload'];
+		if ( strlen( $payload ) > 120000 ) {
+			return new WP_Error( 'wfc27_invalid_envelope', 'Envelope payload is too large.', array( 'status' => 400 ) );
 		}
-		$incoming[] = array( 'id' => 'sf:' . $envelope['id'], 'json' => $json );
+		$incoming[] = array( 'id' => 'sf:' . $envelope['id'], 'json' => $payload );
 	}
 	$station = wfc27_station_table();
 	$received = array();
@@ -60,7 +60,7 @@ function wfc27_receive_train( WP_REST_Request $request ) {
 		if ( $response_bytes > 1800000 ) {
 			break;
 		}
-		$envelopes[] = array( 'id' => $row['envelope_id'], 'payload' => json_decode( $row['json'], true ) );
+		$envelopes[] = array( 'id' => $row['envelope_id'], 'payload' => $row['json'] );
 	}
 	if ( isset( $data['train_state'] ) && in_array( $data['train_state'], array( 'running', 'paused' ), true ) ) {
 		update_option( 'wfc27_train_state', $data['train_state'], false );
@@ -69,5 +69,5 @@ function wfc27_receive_train( WP_REST_Request $request ) {
 	$wpdb->insert( wfc27_trips_table(), array(
 		'sent_count' => count( $envelopes ), 'received_count' => count( $received ), 'occurred_at' => current_time( 'mysql', true ),
 	), array( '%d', '%d', '%s' ) );
-	return rest_ensure_response( array( 'protocol' => 'wfc27.station.v1', 'receipts' => $received, 'envelopes' => $envelopes ) );
+	return rest_ensure_response( array( 'protocol' => 'wfc27.station.v2', 'receipts' => $received, 'envelopes' => $envelopes ) );
 }

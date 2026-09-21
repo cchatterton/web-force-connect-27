@@ -18,15 +18,9 @@ public without sharing class WFC27_Engine {
     }
 
     public static Id stageOutbound(String payload) {
-        if (String.isBlank(payload) || payload.length() > 120000) throw new WFC27_StationException('Envelope JSON is empty or too large.');
-        Object value;
-        try { value = JSON.deserializeUntyped(payload); }
-        catch (Exception error) { throw new WFC27_StationException('Envelope is not valid JSON.'); }
-        if (!(value instanceof Map<String,Object>)) throw new WFC27_StationException('Envelope must be a JSON object.');
+        if (payload != null && payload.length() > 120000) throw new WFC27_StationException('Payload exceeds 120 KB.');
         WFC27_Station__c row = new WFC27_Station__c(Status__c='outbound_ready', Payload__c=payload);
         insert row;
-        row.Envelope_ID__c = String.valueOf(row.Id);
-        update row;
         return row.Id;
     }
     public class WFC27_StationException extends Exception {}

@@ -3,21 +3,21 @@ private class WFC27_TransportTest {
     private class StationMock implements HttpCalloutMock {
         public HttpResponse respond(HttpRequest request) {
             Map<String,Object> train = (Map<String,Object>) JSON.deserializeUntyped(request.getBody());
-            System.assertEquals('wfc27.station.v1', train.get('protocol'));
+            System.assertEquals('wfc27.station.v2', train.get('protocol'));
             List<Object> envelopes = (List<Object>) train.get('envelopes');
             List<String> receipts = new List<String>();
             for (Object value : envelopes) receipts.add((String)((Map<String,Object>) value).get('id'));
             HttpResponse response = new HttpResponse();
             response.setStatusCode(200);
-            response.setBody(JSON.serialize(new Map<String,Object>{'protocol' => 'wfc27.station.v1', 'receipts' => receipts,
-                'envelopes' => new List<Object>{new Map<String,Object>{'id' => 'wp-test-1', 'payload' => new Map<String,Object>{'hello' => 'Salesforce'}}}}));
+            response.setBody(JSON.serialize(new Map<String,Object>{'protocol' => 'wfc27.station.v2', 'receipts' => receipts,
+                'envelopes' => new List<Object>{new Map<String,Object>{'id' => 'wp-test-1', 'payload' => 'jibberish from WordPress'}}}));
             return response;
         }
     }
 
     @IsTest static void outboundAndInboundAreStagedWithoutProcessing() {
         WFC27_Engine.settings();
-        Id id = WFC27_Engine.stageOutbound('{"hello":"WordPress"}');
+        Id id = WFC27_Engine.stageOutbound('jibberish from Salesforce');
         Test.setMock(HttpCalloutMock.class, new StationMock());
         Test.startTest();
         System.enqueueJob(new WFC27_Sender(null));
@@ -25,7 +25,16 @@ private class WFC27_TransportTest {
         System.assertEquals('outbound_delivered', [SELECT Status__c FROM WFC27_Station__c WHERE Id = :id].Status__c);
         WFC27_Station__c inbound = [SELECT Status__c, Payload__c FROM WFC27_Station__c WHERE Envelope_ID__c = 'wp:wp-test-1' LIMIT 1];
         System.assertEquals('inbound_received', inbound.Status__c);
-        System.assertEquals('{"hello":"Salesforce"}', inbound.Payload__c);
+        System.assertEquals('jibberish from WordPress', inbound.Payload__c);
+    }
+
+    @IsTest static void directStationRecordIsReadyForTheTrain() {
+        WFC27_Station__c row = new WFC27_Station__c(Payload__c='not JSON');
+        insert row;
+        row = [SELECT Envelope_ID__c, Status__c, Payload__c FROM WFC27_Station__c WHERE Id = :row.Id];
+        System.assertEquals(String.valueOf(row.Id), row.Envelope_ID__c);
+        System.assertEquals('outbound_ready', row.Status__c);
+        System.assertEquals('not JSON', row.Payload__c);
     }
 
     @IsTest static void emptyTrainIsRecorded() {

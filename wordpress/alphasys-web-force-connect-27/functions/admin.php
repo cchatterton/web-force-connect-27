@@ -32,6 +32,7 @@ function wfc27_admin_ajax_status() {
 	$last = get_option( 'wfc27_last_heartbeat', '' );
 	$counts = $wpdb->get_results( 'SELECT status, COUNT(*) AS total FROM ' . wfc27_station_table() . ' GROUP BY status', ARRAY_A );
 	$parts = array();
+	$waiting = 0;
 	$filter = isset( $_POST['trip_filter'] ) ? sanitize_key( wp_unslash( $_POST['trip_filter'] ) ) : 'hour';
 	$day = isset( $_POST['trip_day'] ) ? sanitize_text_field( wp_unslash( $_POST['trip_day'] ) ) : '';
 	$hour = isset( $_POST['trip_hour'] ) ? absint( wp_unslash( $_POST['trip_hour'] ) ) : 0;
@@ -47,11 +48,13 @@ function wfc27_admin_ajax_status() {
 	$trips = $wpdb->get_results( $wpdb->prepare( 'SELECT id,sent_count,received_count,occurred_at FROM ' . wfc27_trips_table() . ' WHERE occurred_at >= %s AND occurred_at < %s ORDER BY id DESC LIMIT 120', $since, $until ), ARRAY_A );
 	foreach ( $counts as $count ) {
 		$parts[] = ucfirst( $count['status'] ) . ': ' . $count['total'];
+		if ( 'outbound_ready' === $count['status'] ) { $waiting = (int) $count['total']; }
 	}
 	wp_send_json_success( array(
 		'last' => $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : null,
 		'state' => get_option( 'wfc27_train_state', 'running' ),
 		'counts' => implode( ' · ', $parts ),
+		'waiting' => $waiting,
 		'trips' => $trips,
 	) );
 }
@@ -85,56 +88,70 @@ function wfc27_render_admin_page() {
 	global $wpdb;
 	$station = wfc27_station_table();
 	$counts = $wpdb->get_results( "SELECT status, COUNT(*) AS total FROM {$station} GROUP BY status", ARRAY_A );
+	$waiting = 0;
+	foreach ( $counts as $count ) { if ( 'outbound_ready' === $count['status'] ) { $waiting = (int) $count['total']; } }
 	$rows = $wpdb->get_results( "SELECT envelope_id,status,json FROM {$station} ORDER BY envelope_id DESC LIMIT 50", ARRAY_A );
 	$last = get_option( 'wfc27_last_heartbeat', '' );
+	$receiver_id = (int) get_option( 'wfc27_receiver_user_id', 0 );
+	$credentials_url = $receiver_id ? get_edit_user_link( $receiver_id ) : admin_url( 'profile.php' );
 	?>
 	<div class="wrap">
 		<h1>Web Force Connect 27</h1>
-		<p>WFC27 carries JSON between two stations. Processing engines are not installed; received items remain staged.</p>
+		<p>WFC27 carries raw payloads between two stations. Processing engines are not installed; received items remain staged.</p>
+		<div class="wfc27-top-widgets">
 		<section class="wfc27-train-widget" aria-label="WordPress sync train">
 			<h2>Sync Train Arriving</h2>
 			<div id="wfc27-train-countdown" class="wfc27-train-countdown" aria-live="off">01:00</div>
 			<p id="wfc27-heartbeat-label" aria-live="polite">Waiting for train status</p>
 			<div class="wfc27-heartbeat" role="progressbar" aria-label="Time until next train" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-state="<?php echo esc_attr( get_option( 'wfc27_train_state', 'running' ) ); ?>" data-last="<?php echo esc_attr( $last ? gmdate( 'c', strtotime( $last . ' UTC' ) ) : '' ); ?>"><div class="wfc27-heartbeat-fill"></div></div>
+			<p id="wfc27-waiting-count">Items waiting to send: <?php echo esc_html( (string) $waiting ); ?></p>
 		</section>
-		<h2>Recent train trips</h2>
+		<section class="wfc27-connection-widget" aria-label="Connection setup">
+			<h2>Connection setup</h2>
+			<p>Choose the WordPress user that receives trains. Create an Application Password in that user's profile and store it in Salesforce's Named Credential.</p>
+			<p><strong>Receive endpoint</strong><br><code class="wfc27-endpoint"><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></p>
+			<?php if ( isset( $_GET['receiver_saved'] ) ) : ?><div class="notice notice-success"><p>Train receiver saved.</p></div><?php endif; ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="wfc27_save_receiver">
+				<?php wp_nonce_field( 'wfc27_save_receiver' ); ?>
+				<label for="wfc27-receiver-user">WordPress train receiver</label>
+				<select id="wfc27-receiver-user" name="receiver_user_id">
+					<option value="0">Administrators only (default)</option>
+					<?php foreach ( get_users( array( 'orderby' => 'display_name' ) ) as $user ) : ?>
+						<option value="<?php echo esc_attr( (string) $user->ID ); ?>" <?php selected( $receiver_id, (int) $user->ID ); ?>><?php echo esc_html( $user->display_name . ' (' . $user->user_login . ')' ); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<?php submit_button( 'Save receiver', 'secondary', 'submit', false ); ?>
+			</form>
+			<p><a href="<?php echo esc_url( $credentials_url . '#application-passwords-section' ); ?>">Open Application Password settings ↗</a></p>
+		</section>
+		</div>
+		<section class="wfc27-trip-filter-widget" aria-label="Trip filters">
+		<h2>Trip filters</h2>
 		<div class="wfc27-trip-filters">
 			<label>Show <select id="wfc27-trip-filter"><option value="hour">Last hour</option><option value="day">Last 24 hours</option><option value="date">Day (UTC)</option><option value="date_hour">Hour in day (UTC)</option></select></label>
 			<label>Date <input id="wfc27-trip-day" type="date" value="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>"></label>
 			<label>Hour <select id="wfc27-trip-hour"><?php for ( $hour = 0; $hour < 24; $hour++ ) : ?><option value="<?php echo esc_attr( (string) $hour ); ?>"><?php echo esc_html( sprintf( '%02d:00', $hour ) ); ?></option><?php endfor; ?></select></label>
 		</div>
+		</section>
+		<h2>Recent train trips</h2>
 		<table class="widefat striped"><thead><tr><th>Arrived (UTC)</th><th>Sent</th><th>Received</th></tr></thead><tbody id="wfc27-trip-rows"><tr><td colspan="3">Loading trips…</td></tr></tbody></table>
-		<p><strong>Receive endpoint:</strong> <code><?php echo esc_html( rest_url( 'wfc27/v1/train' ) ); ?></code></p>
 		<h2>Station</h2>
-		<?php if ( isset( $_GET['staged'] ) ) : ?><div class="notice notice-success"><p>JSON staged for the next train.</p></div><?php endif; ?>
+		<p><a class="button" href="<?php echo esc_url( wfc27_station_url() ); ?>">Open Station Items</a></p>
+		<?php if ( isset( $_GET['staged'] ) ) : ?><div class="notice notice-success"><p>Payload staged for the next train.</p></div><?php endif; ?>
 		<p id="wfc27-queue-counts"><?php foreach ( $counts as $count ) { echo esc_html( ucfirst( $count['status'] ) . ': ' . $count['total'] ) . ' &nbsp; '; } ?></p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="wfc27_stage_json">
 			<?php wp_nonce_field( 'wfc27_stage_json' ); ?>
-			<label for="wfc27-station-json">Stage outbound JSON for a train test</label><br>
-			<textarea id="wfc27-station-json" name="station_json" rows="4" cols="80" required></textarea><br>
-			<?php submit_button( 'Stage JSON', 'secondary', 'submit', false ); ?>
+			<label for="wfc27-station-json">Stage outbound payload for a train test</label><br>
+			<textarea id="wfc27-station-json" name="station_json" rows="4" cols="80"></textarea><br>
+			<?php submit_button( 'Stage payload', 'secondary', 'submit', false ); ?>
 		</form>
-		<table class="widefat striped"><thead><tr><th>ID</th><th>Status</th><th>JSON</th></tr></thead><tbody>
+		<table class="widefat striped"><thead><tr><th>ID</th><th>Status</th><th>Payload</th></tr></thead><tbody>
 		<?php foreach ( $rows as $row ) : ?>
 		<tr><td><code><?php echo esc_html( $row['envelope_id'] ); ?></code></td><td><?php echo esc_html( $row['status'] ); ?></td><td><code><?php echo esc_html( wp_html_excerpt( $row['json'], 160, '…' ) ); ?></code></td></tr>
 		<?php endforeach; ?>
 		</tbody></table>
-		<h2>Connection setup</h2>
-		<p>By default, a WordPress administrator can send trains using an Application Password. Optionally, choose another user to authorize a dedicated connection. Store the Application Password in Salesforce's credential settings. No special WordPress role or capability is required.</p>
-		<?php if ( isset( $_GET['receiver_saved'] ) ) : ?><div class="notice notice-success"><p>Train receiver saved.</p></div><?php endif; ?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="wfc27_save_receiver">
-			<?php wp_nonce_field( 'wfc27_save_receiver' ); ?>
-			<label for="wfc27-receiver-user">WordPress train receiver</label>
-			<select id="wfc27-receiver-user" name="receiver_user_id">
-				<option value="0">Administrators only (default)</option>
-				<?php foreach ( get_users( array( 'orderby' => 'display_name' ) ) as $user ) : ?>
-					<option value="<?php echo esc_attr( (string) $user->ID ); ?>" <?php selected( (int) get_option( 'wfc27_receiver_user_id', 0 ), (int) $user->ID ); ?>><?php echo esc_html( $user->display_name . ' (' . $user->user_login . ')' ); ?></option>
-				<?php endforeach; ?>
-			</select>
-			<?php submit_button( 'Save receiver', 'primary', 'submit', false ); ?>
-		</form>
 	</div>
 	<?php
 }

@@ -1,11 +1,24 @@
 .wfc27-train-widget {
-	max-width: 440px;
+	width: min(440px, 100%);
+	box-sizing: border-box;
 	padding: 16px;
 	border: 1px solid #c3c4c7;
 	border-radius: 8px;
 	background: #f6f7f7;
-	margin: 18px 0;
+	margin: 0;
 }
+
+.wfc27-top-widgets { display: flex; gap: 16px; flex-wrap: wrap; align-items: stretch; margin: 18px 0; }
+.wfc27-connection-widget { width: min(540px, 100%); box-sizing: border-box; padding: 16px; border: 1px solid #c3c4c7; border-radius: 8px; background: #fff; }
+.wfc27-connection-widget h2 { margin: 0; }
+.wfc27-connection-widget p { margin: 10px 0; }
+.wfc27-connection-widget label { display: block; font-weight: 600; margin-bottom: 5px; }
+.wfc27-connection-widget select { max-width: 100%; width: 100%; margin-bottom: 10px; }
+.wfc27-endpoint { display: inline-block; max-width: 100%; overflow-wrap: anywhere; white-space: normal; margin-top: 5px; }
+.wfc27-trip-filter-widget { display: inline-block; max-width: 100%; box-sizing: border-box; padding: 16px; border: 1px solid #c3c4c7; border-radius: 8px; background: #fff; margin: 0 0 16px; }
+.wfc27-trip-filter-widget h2 { margin: 0 0 12px; }
+.wfc27-trip-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.wfc27-trip-filters label { display: flex; flex-direction: column; gap: 4px; }
 
 .wfc27-train-widget h2 {
 	margin: 0;

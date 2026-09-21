@@ -13,9 +13,9 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
         List<String> receipts = new List<String>();
         Integer payloadSize = 0;
         for (WFC27_Station__c row : outbound) {
-            payloadSize += row.Payload__c.length();
+            payloadSize += row.Payload__c == null ? 0 : row.Payload__c.length();
             if (payloadSize > 1800000) break;
-            envelopes.add(new Map<String,Object>{'id' => String.valueOf(row.Id), 'payload' => JSON.deserializeUntyped(row.Payload__c)});
+            envelopes.add(new Map<String,Object>{'id' => String.valueOf(row.Id), 'payload' => row.Payload__c == null ? '' : row.Payload__c});
             sentOutbound.add(row);
         }
         for (WFC27_Station__c row : inbound) receipts.add(row.Envelope_ID__c.removeStart('wp:'));
@@ -24,13 +24,13 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
         request.setMethod('POST');
         request.setHeader('Content-Type', 'application/json');
         request.setTimeout(30000);
-        request.setBody(JSON.serialize(new Map<String,Object>{'protocol' => 'wfc27.station.v1', 'envelopes' => envelopes,
+        request.setBody(JSON.serialize(new Map<String,Object>{'protocol' => 'wfc27.station.v2', 'envelopes' => envelopes,
             'receipts' => receipts, 'train_state' => settings.Train_Paused__c ? 'paused' : 'running', 'capacity' => capacity}));
         try {
             HttpResponse response = new Http().send(request);
             if (response.getStatusCode() < 200 || response.getStatusCode() > 299) throw new WFC27_TransportException('WordPress returned HTTP ' + response.getStatusCode());
             Map<String,Object> result = (Map<String,Object>) JSON.deserializeUntyped(response.getBody());
-            if ((String) result.get('protocol') != 'wfc27.station.v1') throw new WFC27_TransportException('Unexpected station protocol.');
+            if ((String) result.get('protocol') != 'wfc27.station.v2') throw new WFC27_TransportException('Unexpected station protocol.');
             List<Object> acknowledged = (List<Object>) result.get('receipts');
             List<Object> arrived = (List<Object>) result.get('envelopes');
             if (acknowledged == null || arrived == null || arrived.size() > capacity) throw new WFC27_TransportException('Invalid station response.');
@@ -43,10 +43,10 @@ public without sharing class WFC27_Sender implements Queueable, Database.AllowsC
             for (Object value : arrived) {
                 Map<String,Object> envelope = (Map<String,Object>) value;
                 String id = String.valueOf(envelope.get('id'));
-                if (String.isBlank(id) || id.length() > 96 || envelope.get('payload') == null) throw new WFC27_TransportException('Invalid inbound envelope.');
-                String json = JSON.serialize(envelope.get('payload'));
-                if (json.length() > 120000) throw new WFC27_TransportException('Inbound JSON is too large.');
-                writes.add(new WFC27_Station__c(Envelope_ID__c='wp:' + id, Status__c='inbound_received', Payload__c=json));
+                if (String.isBlank(id) || id.length() > 96 || !(envelope.get('payload') instanceof String)) throw new WFC27_TransportException('Invalid inbound envelope.');
+                String payload = (String) envelope.get('payload');
+                if (payload.length() > 120000) throw new WFC27_TransportException('Inbound payload is too large.');
+                writes.add(new WFC27_Station__c(Envelope_ID__c='wp:' + id, Status__c='inbound_received', Payload__c=payload));
             }
             for (WFC27_Station__c row : writes) {
                 try { insert row; }

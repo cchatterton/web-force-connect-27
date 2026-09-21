@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+- Train envelopes now carry opaque text payloads, including JSON, plain text, and arbitrary text.
+- Salesforce Station Items now have an object tab, page layout, and direct record defaults for the train.
+- WordPress has independent Station Items list and detail screens with JSON element inspection and pre-departure editing.
+- Connection setup sits beside the train countdown and includes the receive endpoint and a link to the receiver's Application Password settings. Trip filters have their own widget, and both train widgets show items waiting to send.
+
 ## 0.2.1
 
 Add a WordPress administrator form to stage opaque outbound JSON for train tests.
