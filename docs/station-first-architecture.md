@@ -1,54 +1,25 @@
-# Station-first architecture proposal
+# Station-first architecture
 
-Status: design decision; current runtime is unchanged.
+Status: implemented in WFC27 0.3.0. Data processing engines are separate future packages.
 
-## Product boundary
+WFC27 moves opaque text between a Salesforce station and a WordPress station. It does not choose business records, interpret payloads, create posts, or update Salesforce business objects. A future data processing engine on each side may stage outbound text and consume inbound text, including JSON if that engine chooses.
 
-WFC27 is transport. It owns an authenticated one-minute train, durable stations on both sides, receipt acknowledgements, pause/play, retry of *unreceived transport deliveries*, and trip history. It does not query business objects, choose eligible records, map fields, build post/meta JSON, write business records, or maintain business identity maps.
+Salesforce stores items in `WFC27_Station__c` with `Envelope_ID__c`, `Payload__c`, and `Status__c`. The object has a normal tab and record layout. WordPress stores them in its prefixed `wfc27_station` table with `envelope_id`, `json`, and `status`; the `json` column name is retained for compatibility but holds raw text. The WordPress admin has a separate Station Items list and detail screen. A station accepts JSON, plain text, empty text, or any other text within the platforms' storage limits.
 
-Build a separate Salesforce data processing engine and a separate WordPress data processing engine. Each can publish an outbound envelope into its local station and consume an inbound envelope from that station. The engines own object selection, rules, JSON creation and interpretation, destination upserts, deletion policy, business identity, and processing errors. They have separate packages and release cycles. Neither engine calls the other directly.
+The four transport statuses are `outbound_ready`, `outbound_delivered`, `inbound_received`, and `inbound_acked`. They do not describe business processing. The train trip log is separate and records empty trips as well as failed calls. Repeated delivery of the same envelope ID does not create another station item.
 
-## One station in each system
+Salesforce initiates an authenticated train every minute. Its request includes ready Salesforce items and receipts for previously received WordPress items. The WordPress response acknowledges received Salesforce items and includes ready WordPress items. The next Salesforce train acknowledges those WordPress items. Each side stores a received item before acknowledging it.
 
-Evolve Salesforce `WFC27_Packet__c` and WordPress `wfc27_packets` into generic station stores. Every nonempty envelope has an origin, immutable envelope ID, direction (`outbound` or `inbound`), object/type label, source record ID, operation, opaque JSON payload, creation/receipt time, status, and error/claim metadata. The station enforces unique origin + envelope ID. A content envelope is never duplicated merely because a train or acknowledgement repeats.
-
-Station status must distinguish transport receipt from processing completion. A minimal state model is `ready` (local outbound), `received` (remote inbound), `claimed` (processor working), `completed` (processor result available), `acknowledged` (remote has received that result), and `error` (operator review). Claims need a lease so an interrupted engine can resume. Processing errors do not cause WFC27 to resend an already received envelope.
-
-Trip logs remain separate. A train trip exists every minute, even with zero envelopes. No empty staging row is needed just to display a heartbeat.
-
-## The train is bidirectional
-
-Salesforce still initiates the one-minute HTTP exchange. Each request carries up to the configured capacity of *Salesforce outbound* envelopes and acknowledges previously received WordPress envelopes/results. The WordPress response carries receipt acknowledgements and up to its configured capacity of *WordPress outbound* envelopes. Both sides persist newly received envelopes before acknowledging them. Work is processed after receipt, outside the HTTP exchange; a later train carries the result or receipt confirmation.
-
-The transport wrapper is the same in either direction. For example:
+The packet is JSON, but each payload is a string. Protocol `wfc27.station.v2` uses this shape:
 
 ```json
 {
-  "envelope_id": "stable-origin-scoped-id",
-  "origin": "salesforce",
-  "type": "record.changed",
-  "object": "Course__c",
-  "record_id": "a00000000000001AAA",
-  "operation": "upsert",
-  "schema_version": 1,
-  "payload": { "any": "JSON owned by the processing engine" }
+  "protocol": "wfc27.station.v2",
+  "envelopes": [{"id": "stable-envelope-id", "payload": "uninterpreted text"}],
+  "receipts": ["previously-received-envelope-id"],
+  "capacity": 25,
+  "train_state": "running"
 }
 ```
 
-WFC27 reads the wrapper to route, count, deduplicate, and trace the envelope. It never interprets `payload`. WordPress-originated envelopes use the same wrapper with `origin: "wordpress"`; they are not limited to processing acknowledgements. Transport can carry a record change, an instruction, a result, or another engine-defined type.
-
-## Adding an object
-
-An administrator adds an object to the appropriate processing engine and defines when changes produce an envelope and how that object's fields are represented. The engine then stages changes locally. The opposite engine needs a corresponding consumer rule to apply or otherwise handle that envelope. No WFC27 code or database schema change is required for a new object. An object can be configured in one direction or both; two-way business updates require explicit field ownership and conflict rules in the engines, not in transport.
-
-This means “anything can be sent and received” at the station level. It does not mean arbitrary JSON should automatically overwrite an arbitrary destination record. An unrecognized envelope remains staged with a visible processing error until a consumer is configured.
-
-## Migration from the current build
-
-1. Retain the working scheduler, security, pause/play, REST route, and trip history. Introduce generic envelope fields and bidirectional station APIs behind the current packet interfaces.
-2. Prove an empty train and one opaque envelope in each direction with durable receipt, duplicate suppression, delayed completion, and a failed-consumer case. Do not write a WordPress post in this slice.
-3. Move `WFC27_Engine.scan/dispatch` object scanning and JSON assembly into the new Salesforce engine. WFC27 dequeues only prepared envelopes.
-4. Move `wfc27_apply_packet` and its post/meta/deletion handlers into the new WordPress engine. Move `WFC27_Sender.processResults` identity reconciliation into the Salesforce engine. The transport stores and carries their outputs without interpreting them.
-5. Transfer bindings and identity ownership to the processing engines. Keep compatibility adapters until existing staged packets have drained, then remove WFC27's content-specific paths.
-
-The current post/meta packet remains a processing-engine payload during migration; it is no longer the transport protocol itself.
+The future engines own eligibility, field mapping, business identity, destination updates, deletion rules, and processing errors. They can use the station without changing WFC27's transport protocol.
