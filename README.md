@@ -35,3 +35,7 @@ The Salesforce source is under `salesforce/force-app/main/default`; its unmanage
 The `legacy/` directory holds the earlier content-processing source for reference. It is not part of either current package. Existing deployed legacy data objects/tables are deliberately left in place for migration; deleting them would destroy data. The [station-first design](docs/station-first-architecture.md) describes the product boundary and future engine integration.
 
 For local WordPress transport validation, run `wp eval-file tests/wp-station.php` from a disposable local site with the plugin active. The test refuses non-local environments and removes its own station items.
+
+## Controller integration — 0.3.9
+
+Remove independent GitHub update checks and delegate updates to AlphaSys Update Controller. Keep Beta readiness and existing feature settings, package identity and domain restrictions. Previous standalone GitHub update instructions are superseded.

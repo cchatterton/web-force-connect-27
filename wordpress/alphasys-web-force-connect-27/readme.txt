@@ -1,10 +1,10 @@
 === AlphaSys Web Force Connect 27 ===
 Contributors: alphasys
 Tags: salesforce, integration, transport, json
-Requires at least: 6.0
-Tested up to: 7.1.1
-Stable tag: 0.3.7
-Requires PHP: 8.1
+Requires at least: 7.0
+Tested up to: 7.0
+Stable tag: 0.3.9
+Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,6 +19,9 @@ WFC27 receives authenticated station trains from Salesforce. It stores inbound t
 Install and activate the plugin. Create an Application Password for a WordPress administrator or choose a dedicated receiver user in WFC27 settings. Set the Salesforce Named Credential to the HTTPS endpoint shown on the WFC27 admin page. The Salesforce package creates the counterpart station and controls the one-minute train.
 
 == Changelog ==
+
+= 0.3.9 =
+* Remove independent GitHub update checks and delegate updates to AlphaSys Update Controller. Keep Beta readiness and existing feature settings, package identity and domain restrictions.
 
 = 0.3.7 =
 Put the waiting packet count back inside each train widget without an awaiting-receipt count, and align the heartbeat styling across platforms.
@@ -56,3 +59,10 @@ Show recent train trips, including empty packets, with time filters.
 == External services ==
 
 The configured Salesforce org initiates authenticated HTTP calls to this plugin's station endpoint. The request and response exchange JSON packets containing opaque text payloads and transport receipts. The plugin does not initiate calls to Salesforce. The connection is to the site administrator's own Salesforce org. Salesforce legal terms: https://www.salesforce.com/company/legal/customer-agreements/ . Salesforce privacy information: https://www.salesforce.com/company/legal/privacy/ .
+
+== Managed updates ==
+
+Install or activate AlphaSys Update Controller using the plugin row action. Update discovery is manual or scheduled by the controller; ordinary page rendering never checks GitHub. Feature operation does not require the controller. This release remains Beta. Earlier standalone updater instructions are superseded. Explicit controller installation downloads the official GitHub release; no feature settings or site inventory are sent. GitHub receives normal request metadata.
+
+Service terms: https://docs.github.com/en/site-policy/github-terms/github-terms-of-service
+Privacy: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement

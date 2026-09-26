@@ -1,52 +1,52 @@
 .wfc27-train-widget {
 	box-sizing: border-box;
-	padding: 16px;
-	border: 1px solid #c3c4c7;
-	border-radius: 8px;
+	padding: 1rem;
+	border: 0.0625rem solid #c3c4c7;
+	border-radius: 0.5rem;
 	background: #f9fafb;
 	margin: 0;
 }
 
-.wfc27-top-widgets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; align-items: stretch; margin: 18px 0; }
-.wfc27-endpoint-widget, .wfc27-integration-widget, .wfc27-trip-filter-widget, .wfc27-retention-widget { min-width: 0; box-sizing: border-box; padding: 16px; border: 1px solid #c3c4c7; border-radius: 8px; background: #fff; }
-.wfc27-endpoint-widget h2, .wfc27-integration-widget h2, .wfc27-trip-filter-widget h2, .wfc27-retention-widget h2 { margin: 0 0 12px; }
-.wfc27-endpoint-widget p, .wfc27-integration-widget p { margin: 10px 0; }
-.wfc27-integration-widget label { display: block; font-weight: 600; margin-bottom: 5px; }
-.wfc27-integration-widget select { max-width: 100%; width: 100%; margin-bottom: 10px; }
-.wfc27-endpoint { display: inline-block; max-width: 100%; overflow-wrap: anywhere; white-space: normal; margin-top: 5px; }
-.wfc27-trip-filters { display: grid; gap: 10px; }
-.wfc27-trip-filters label { display: flex; flex-direction: column; gap: 4px; }
+.wfc27-top-widgets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; align-items: stretch; margin: 1.125rem 0; }
+.wfc27-endpoint-widget, .wfc27-integration-widget, .wfc27-trip-filter-widget, .wfc27-retention-widget { min-width: 0; box-sizing: border-box; padding: 1rem; border: 0.0625rem solid #c3c4c7; border-radius: 0.5rem; background: #fff; }
+.wfc27-endpoint-widget h2, .wfc27-integration-widget h2, .wfc27-trip-filter-widget h2, .wfc27-retention-widget h2 { margin: 0 0 0.75rem; }
+.wfc27-endpoint-widget p, .wfc27-integration-widget p { margin: 0.625rem 0; }
+.wfc27-integration-widget label { display: block; font-weight: 600; margin-bottom: 0.3125rem; }
+.wfc27-integration-widget select { max-width: 100%; width: 100%; margin-bottom: 0.625rem; }
+.wfc27-endpoint { display: inline-block; max-width: 100%; overflow-wrap: anywhere; white-space: normal; margin-top: 0.3125rem; }
+.wfc27-trip-filters { display: grid; gap: 0.625rem; }
+.wfc27-trip-filters label { display: flex; flex-direction: column; gap: 0.25rem; }
 .wfc27-trip-filters select, .wfc27-trip-filters input { width: 100%; max-width: 100%; }
-.wfc27-retention-widget label { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-weight: 600; }
+.wfc27-retention-widget label { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.625rem; font-weight: 600; }
 .wfc27-retention-widget input { width: 100%; }
-@media (max-width: 1200px) { .wfc27-top-widgets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 782px) { .wfc27-top-widgets { grid-template-columns: 1fr; } }
+@media (max-width: 75rem) { .wfc27-top-widgets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 48.875rem) { .wfc27-top-widgets { grid-template-columns: 1fr; } }
 
 .wfc27-train-widget h2 {
 	margin: 0;
-	font-size: 20px;
+	font-size: 1.25rem;
 	font-weight: 600;
 	line-height: 1.2;
 }
 
 .wfc27-train-countdown {
-	font-size: 40px;
+	font-size: 2.5rem;
 	font-weight: 700;
 	font-variant-numeric: tabular-nums;
 	line-height: 1.2;
-	margin-top: 12px;
+	margin-top: 0.75rem;
 }
 
 .wfc27-train-widget p {
-	margin: 4px 0 0;
+	margin: 0.25rem 0 0;
 }
 
 .wfc27-heartbeat {
-	height: 10px;
+	height: 0.625rem;
 	background: #dcdcde;
-	border-radius: 5px;
+	border-radius: 0.3125rem;
 	overflow: hidden;
-	margin-top: 10px;
+	margin-top: 0.625rem;
 }
 
 .wfc27-heartbeat-fill {
@@ -56,4 +56,4 @@
 	transition: width 0.25s linear;
 }
 
-.wfc27-train-widget > p:last-child { margin-top: 8px; }
+.wfc27-train-widget > p:last-child { margin-top: 0.5rem; }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.9 - 2026-09-26
+
+- Align WordPress 7.0 / PHP 7.4 metadata, GPL/readme packaging and project-authored CSS units with current Codex standards.
+- Remove independent GitHub update checks and delegate updates to AlphaSys Update Controller. Keep Beta readiness and existing feature settings, package identity and domain restrictions.
+- Standardise update headers and controller-aware Install/Activate/Check links.
+
 ## 0.3.8
 - Purge empty successful sync logs after 7 days and packet-bearing sync logs after 90 days on both platforms.
 - Retain failed Salesforce sync logs for 365 days.
